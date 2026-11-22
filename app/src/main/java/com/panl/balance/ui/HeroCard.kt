@@ -2,7 +2,6 @@ package com.panl.balance.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.panl.balance.data.ApiError
 import com.panl.balance.data.BalanceSnapshot
+import com.panl.balance.data.Prefs
 import com.panl.pui.PuiGroup
 import com.panl.pui.PuiIcon
 import com.panl.pui.PuiIconView
@@ -51,17 +51,20 @@ fun BalanceHero(
     blue: Boolean = true,
     peak: PeakState? = null,
 ) {
-    val dark = isSystemInDarkTheme()
+    val dark = Appearance.dark()
     val primary = snapshot?.primary
     val amount = primary?.let { Fmt.amount(it.total) } ?: "—"
     val symbol = primary?.let { Fmt.symbol(it.currency) } ?: "¥"
     val integer = amount.substringBefore(".")
     val decimals = amount.substringAfter(".", "")
+    // 渐变跟着主题主色走。默认（DeepSeek 蓝）用它原本的蓝→紫品牌渐变；
+    // 换成自定义 ARGB / 壁纸取色时改成同色系压暗一档 —— 绿配紫、红配紫那种跨色相渐变很脏。
+    val scheme = MaterialTheme.colorScheme
     val gradient = when {
-        blue && dark -> HeroGradientDark
-        blue -> HeroGradientLight
-        dark -> HeroGreenDark
-        else -> HeroGreenLight
+        Appearance.accentMode == Prefs.MODE_DEFAULT && dark -> HeroGradientDark
+        Appearance.accentMode == Prefs.MODE_DEFAULT -> HeroGradientLight
+        dark -> listOf(scheme.primaryContainer, scheme.primaryContainer.dim(0.18f))
+        else -> listOf(scheme.primary, scheme.primary.dim(0.18f))
     }
 
     val subtitle = when {
@@ -308,7 +311,7 @@ fun LowBalanceBanner(
     onTopUp: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val dark = isSystemInDarkTheme()
+    val dark = Appearance.dark()
     val bg = if (dark) WarnBgDark else WarnBgLight
     val fg = if (dark) WarnFgDark else WarnFgLight
     Row(
@@ -369,3 +372,11 @@ fun OnboardingCard(
         }
     }
 }
+
+/** 同色系压暗：RGB 各乘一个系数，色相不变。 */
+private fun Color.dim(factor: Float): Color = Color(
+    red = red * (1f - factor),
+    green = green * (1f - factor),
+    blue = blue * (1f - factor),
+    alpha = alpha,
+)

@@ -75,25 +75,15 @@ class DetailActivity : ComponentActivity() {
 
         val prefs = Prefs(this)
         setContent {
-            val dark = isSystemInDarkTheme()
+            val dark = Appearance.dark()
             val scope = rememberCoroutineScope()
 
             var snapshot by remember { mutableStateOf(prefs.lastSnapshot) }
             var history by remember { mutableStateOf(prefs.history) }
             var loading by remember { mutableStateOf(false) }
-            val blue = prefs.blueAccent
+            val blue = Appearance.accentMode == Prefs.MODE_DEFAULT
 
-            val scheme = when {
-                !blue -> null
-                dark -> DeepSeekDarkColors
-                else -> DeepSeekLightColors
-            }
-
-            PuiTheme(
-                darkTheme = dark,
-                dynamicAccent = prefs.wallpaperIcons,
-                colorScheme = scheme
-            ) {
+            BalanceTheme {
                 val primary = snapshot?.primary
                 Box(
                     Modifier

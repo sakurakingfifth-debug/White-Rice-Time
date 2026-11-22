@@ -6,8 +6,8 @@
 浅灰底（`#F0F1F3`）+ 纯白卡片（`#FFFFFF`）+ 20dp 圆角 + 克制字阶，强调色默认换成 DeepSeek 蓝。
 
 - 包名：`com.panl.balance`
-- 版本：`4.15`（versionCode 46）
-- 产物：`白饭时刻-4.15.apk`（8.4 MB，已签名可直接安装）
+- 版本：`4.16`（versionCode 47）
+- 产物：`白饭时刻-4.16.apk`（8.5 MB，已签名可直接安装）
 - 成品包下载：[Releases · 最新版本](https://github.com/sakurakingfifth-debug/White-Rice-Time/releases/latest)
 - 编译基准：Kotlin 2.2.10 / Compose 1.10.4 / Material3 1.4.0 / AGP 9.2.1 / Gradle 9.4.1 / compileSdk 37 / minSdk 26
 
@@ -774,7 +774,65 @@ Phone / Split / SliderVertical / Selected），应用界面不用它们。
 
 ---
 
-## 十五、已知限制
+## 十五、外观与导航栏（4.16）
+
+设置 → 外观 →「外观与导航栏」，照 PUI 安装器的同名页面重做：明暗、主题色、模糊三块，
+改完立刻生效，不用重启。
+
+### 三层结构
+
+| 层 | 文件 | 职责 |
+|---|---|---|
+| 状态 | `ui/Appearance.kt` 的 `Appearance` 单例 | 用 `mutableStateOf` 存当前值，setter 同时落盘到 `Prefs`；`PuiApp.onCreate` 里 `load()` 一次 |
+| 派生 | `ColorScheme.withAccent()` | 只重算 primary 一族（容器色按混色推），中性灰阶不动 |
+| 应用 | `BalanceTheme` | 三态明暗 + 三态主题色 → `PuiTheme(dynamicAccent = false)` |
+
+用单例而不是直接读 SharedPreferences 的原因很实在：设置页一改要让整棵树重组，
+而 `SharedPreferences` 没有可观察性。`dynamicAccent = false` 也是有意的 ——
+图标统一跟 `colorScheme.primary` 走，而 primary 已经是用户选的颜色，
+原来那个「图标跟随壁纸取色」开关就没有存在必要了。
+
+### 主题三态
+
+`跟随系统 / 浅色 / 深色`，分段控件（`PuiSegmented`，选中底板用 `Animatable` 滑动）。
+`System` 走 `isSystemInDarkTheme()`，其余两个硬指定。
+
+**踩到的坑**：主题模式改了之后，凡是直接调 `isSystemInDarkTheme()` 的地方都不会跟着变。
+首页主卡片和「余额明细」入口卡就是这样 —— 系统是深色、主题选了浅色时，会出现
+「白底页面 + 深色卡片」的错位。现在全部换成 `Appearance.dark()`。
+
+### 主题色三态
+
+| 选项 | 结果 |
+|---|---|
+| 自定义 ARGB | 输入 `#AARRGGBB`（6 位也行），带 5 个预设色块 |
+| 跟随系统壁纸 | `dynamicLight/DarkColorScheme().primary`（API 31+，低版本回落到默认） |
+| 恢复默认 | DeepSeek 蓝 `#4D6BFE` |
+
+旧的两个开关（DeepSeek 蓝主色 / 图标跟随壁纸取色）已合并进这里：老用户如果开着
+「图标跟随壁纸」，升级后自动落到「跟随系统壁纸」，不会突然变回蓝色。
+
+### 模糊
+
+`顶部模糊与毛玻璃` 总开关 + 两个深度滑块（2–100 px），分别接到：
+
+- 顶部模糊深度 → `Modifier.progressiveTopBlur(maxRadius = …)`；
+- 浮窗背景模糊 → `rememberNavBackdrop(blurRadius = …)`。
+
+关掉开关时整条 `progressiveTopBlur` 不再挂上去，顶栏退回纯色渐隐（和 API < 33 的降级路径一致）。
+
+### 取舍
+
+首页主卡片的渐变跟着主色变：默认色仍是原来的蓝→紫品牌渐变；换成自定义 / 壁纸取色时
+改成同色系压暗一档 —— 绿配紫、红配紫那种跨色相渐变很脏。
+
+**没跟着变的地方**：通知的强调色、桌面小组件的配色仍是固定的蓝/绿两档
+（`BalanceNotifications` / `BalanceWidgets` 里的常量），它们走 RemoteViews，
+拿不到 Compose 的主题；要跟的话得把 ARGB 传进 RemoteViews 布局，另说。
+
+---
+
+## 十六、已知限制
 
 - **模糊链路需要 API 33+**（`RuntimeShader`）：低版本自动跳过顶部渐变模糊与导航栏玻璃模糊，
   只保留纯色渐隐，主题与组件不受影响。
@@ -789,7 +847,7 @@ Phone / Split / SliderVertical / Selected），应用界面不用它们。
 
 ---
 
-## 十六、版本记录
+## 十七、版本记录
 
 | 版本 | 内容 |
 |---|---|
@@ -840,3 +898,4 @@ Phone / Split / SliderVertical / Selected），应用界面不用它们。
 | 4.14 | 新增「后台隐藏」：退到后台时把任务卡片从「最近任务」移除（整体 `onStop` 时 `finishAndRemoveTask`，跳过转屏与主动 finish）。先按 GKD 的 `setExcludeFromRecents` 实现，实测只改根 Intent 标志、对已有卡片无效，故改走确定性方案，详见第十二节 |
 | 4.15 | 设置 · 关于新增「GitHub 项目」「检查更新」两行；新增「软件更新」整页（版本对照 + 更新日志 + 检查更新 / GitHub 圆形入口），数据走 GitHub Releases 的三级兜底（API → atom → 302 跳转），见第十三节 |
 | 4.15 | 图标全部换成 Iconsax Duotone Filled 真素材：`tools/gen_icons_from_iconsax.py` 从 pui-demo 的 `icons_iconsax.txt` 生成 12 个 `ic_pui_*.xml`，`PuiIcon` 加 `res` 字段，`PuiIconView` 有资源走矢量 + tint，见第十四节 |
+| 4.16 | 外观与导航栏：主题三态（跟随系统/浅色/深色）、主题色三态（自定义 ARGB / 跟随壁纸 / 恢复默认）、顶部模糊开关与两个深度滑块；`Appearance` 单例承载状态，`BalanceTheme` 派生配色，见第十五节 |

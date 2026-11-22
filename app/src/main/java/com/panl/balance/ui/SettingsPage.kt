@@ -81,6 +81,7 @@ fun SettingsPage(
     topPad: Dp,
     scroll: ScrollState,
     onOpenOta: () -> Unit,
+    onOpenAppearance: () -> Unit,
 ) {
     val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
@@ -359,21 +360,12 @@ fun SettingsPage(
         }
 
         PuiGroup("外观") {
-            PuiSwitchRow(
+            PuiNavRow(
                 icon = PuiIcon.Brush,
-                title = "DeepSeek 蓝主色",
-                subtitle = "关闭后改用 PUI Themed 的主题色",
-                checked = vm.blueAccent,
-                onChange = { vm.updateBlueAccent(it) },
-                showDivider = true
-            )
-            PuiSwitchRow(
-                icon = PuiIcon.Glow,
-                title = "图标跟随壁纸取色",
-                subtitle = "Android 12+ 使用系统动态取色给图标上色",
-                checked = vm.wallpaperIcons,
-                onChange = { vm.updateWallpaperIcons(it) },
-                showDivider = false
+                title = "外观与导航栏",
+                subtitle = "主题、主题色、模糊",
+                showDivider = false,
+                onClick = onOpenAppearance
             )
         }
 

@@ -47,6 +47,43 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(K_WALLPAPER, false)
         set(value) = sp.edit().putBoolean(K_WALLPAPER, value).apply()
 
+    // ---------------- 外观与导航栏 ----------------
+
+    /** 明暗：`System` / `Light` / `Dark`。 */
+    var themeMode: String
+        get() = sp.getString(K_THEME_MODE, MODE_SYSTEM) ?: MODE_SYSTEM
+        set(value) = sp.edit().putString(K_THEME_MODE, value).apply()
+
+    /**
+     * 主题色来源：`Default`（DeepSeek 蓝）/ `Wallpaper`（系统壁纸取色）/ `Custom`（[accentArgb]）。
+     *
+     * 默认值沿用旧开关的状态：之前关掉「DeepSeek 蓝主色」的人回到了 PUI 洋红，
+     * 这里没有洋红这一档，统一落到「默认」并把选择权交回给用户。
+     */
+    var accentMode: String
+        get() = sp.getString(K_ACCENT_MODE, null) ?: if (wallpaperIcons) MODE_WALLPAPER else MODE_DEFAULT
+        set(value) = sp.edit().putString(K_ACCENT_MODE, value).apply()
+
+    /** 自定义主题色（ARGB），只在 [accentMode] = `Custom` 时生效。 */
+    var accentArgb: Int
+        get() = sp.getInt(K_ACCENT_ARGB, DEFAULT_ACCENT_ARGB)
+        set(value) = sp.edit().putInt(K_ACCENT_ARGB, value).apply()
+
+    /** 顶部模糊与毛玻璃总开关。 */
+    var blurEnabled: Boolean
+        get() = sp.getBoolean(K_BLUR_ENABLED, true)
+        set(value) = sp.edit().putBoolean(K_BLUR_ENABLED, value).apply()
+
+    /** 顶部模糊深度（px），对应 [com.panl.pui.progressiveTopBlur] 的 maxRadius。 */
+    var topBlurPx: Int
+        get() = sp.getInt(K_TOP_BLUR, 60).coerceIn(2, 100)
+        set(value) = sp.edit().putInt(K_TOP_BLUR, value.coerceIn(2, 100)).apply()
+
+    /** 浮窗（底部导航栏）背景模糊半径（px）。 */
+    var navBlurPx: Int
+        get() = sp.getInt(K_NAV_BLUR, 48).coerceIn(2, 100)
+        set(value) = sp.edit().putInt(K_NAV_BLUR, value.coerceIn(2, 100)).apply()
+
     /** 实时更新通知（Android 16+ 会被提升为状态栏实时动态）。 */
     var liveNotification: Boolean
         get() = sp.getBoolean(K_LIVE_NOTIFY, false)
@@ -195,6 +232,24 @@ class Prefs(context: Context) {
     companion object {
         const val MIN_INTERVAL = 30
         const val MAX_INTERVAL = 300
+
+        // 明暗与主题色（外观与导航栏）
+        const val MODE_SYSTEM = "System"
+        const val MODE_LIGHT = "Light"
+        const val MODE_DARK = "Dark"
+        const val MODE_DEFAULT = "Default"
+        const val MODE_WALLPAPER = "Wallpaper"
+        const val MODE_CUSTOM = "Custom"
+
+        /** DeepSeek 蓝 #4D6BFE，和主题色板的 primary 一致。 */
+        const val DEFAULT_ACCENT_ARGB = 0xFF4D6BFE.toInt()
+
+        private const val K_THEME_MODE = "theme_mode"
+        private const val K_ACCENT_MODE = "theme_accent_mode"
+        private const val K_ACCENT_ARGB = "theme_accent_argb"
+        private const val K_BLUR_ENABLED = "blur_enabled"
+        private const val K_TOP_BLUR = "top_blur_px"
+        private const val K_NAV_BLUR = "nav_blur_px"
 
         private const val K_API_KEY = "api_key"
         private const val K_AUTO = "auto_refresh"

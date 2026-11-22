@@ -10,7 +10,6 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -38,13 +37,13 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.panl.balance.ui.BalancePage
 import com.panl.balance.ui.BalanceViewModel
-import com.panl.balance.ui.DeepSeekDarkColors
-import com.panl.balance.ui.DeepSeekLightColors
+import com.panl.balance.ui.Appearance
+import com.panl.balance.ui.AppearanceScreen
+import com.panl.balance.ui.BalanceTheme
 import com.panl.balance.ui.OtaScreen
 import com.panl.balance.ui.SettingsPage
 import com.panl.pui.PuiFloatingNavBar
 import com.panl.pui.PuiIcon
-import com.panl.pui.PuiTheme
 import com.panl.pui.PuiTopFade
 import com.panl.pui.navBackdropSource
 import com.panl.pui.progressiveTopBlur
@@ -61,22 +60,14 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun App(vm: BalanceViewModel = viewModel()) {
-    val dark = isSystemInDarkTheme()
-    val scheme = when {
-        !vm.blueAccent -> null
-        dark -> DeepSeekDarkColors
-        else -> DeepSeekLightColors
-    }
-
-    PuiTheme(
-        darkTheme = dark,
-        dynamicAccent = vm.wallpaperIcons,
-        colorScheme = scheme
-    ) {
+    BalanceTheme {
         val pagerState = rememberPagerState(initialPage = vm.startPage) { 2 }
         val scope = rememberCoroutineScope()
         val blurHeight = rememberPuiTopBlurHeight()
-        val backdrop = rememberNavBackdrop()
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val navBlur = with(density) { Appearance.navBlurPx.toDp() }
+        val topBlur = with(density) { Appearance.topBlurPx.toDp() }
+        val backdrop = rememberNavBackdrop(blurRadius = navBlur)
         val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
         val balanceScroll = rememberScrollState()
         val settingsScroll = rememberScrollState()
@@ -84,9 +75,11 @@ fun App(vm: BalanceViewModel = viewModel()) {
         val lifecycleOwner = LocalLifecycleOwner.current
         var resumed by remember { mutableStateOf(false) }
 
-        // 「软件更新」整页盖在最上层：不销毁下面的 Pager，返回时页面与滚动位置都还在
+        // 「软件更新」「外观与导航栏」整页盖在最上层：不销毁下面的 Pager，返回时页面与滚动位置都还在
         var showOta by remember { mutableStateOf(false) }
+        var showAppearance by remember { mutableStateOf(false) }
         BackHandler(enabled = showOta) { showOta = false }
+        BackHandler(enabled = showAppearance) { showAppearance = false }
 
         DisposableEffect(lifecycleOwner) {
             val observer = LifecycleEventObserver { _, event ->
@@ -131,7 +124,13 @@ fun App(vm: BalanceViewModel = viewModel()) {
                     .then(if (supportsBlur) Modifier.navBackdropSource(backdrop) else Modifier)
                     .then(
                         if (supportsBlur) {
-                            Modifier.progressiveTopBlur(blurHeight, backdrop = backdrop)
+                            Modifier.then(
+                                if (Appearance.blurEnabled) {
+                                    Modifier.progressiveTopBlur(blurHeight, maxRadius = topBlur, backdrop = backdrop)
+                                } else {
+                                    Modifier
+                                }
+                            )
                         } else {
                             Modifier
                         }
@@ -152,7 +151,8 @@ fun App(vm: BalanceViewModel = viewModel()) {
                         vm = vm,
                         topPad = blurHeight,
                         scroll = settingsScroll,
-                        onOpenOta = { showOta = true }
+                        onOpenOta = { showOta = true },
+                        onOpenAppearance = { showAppearance = true }
                     )
                 }
             }
@@ -191,6 +191,24 @@ fun App(vm: BalanceViewModel = viewModel()) {
                         ) {}
                 ) {
                     OtaScreen(onBack = { showOta = false })
+                }
+            }
+
+            AnimatedVisibility(
+                visible = showAppearance,
+                enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
+                exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut(),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {}
+                ) {
+                    AppearanceScreen(onBack = { showAppearance = false })
                 }
             }
         }

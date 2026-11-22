@@ -32,6 +32,14 @@ import com.panl.pui.PuiDivider
 import com.panl.pui.PuiGhostButton
 import com.panl.pui.PuiIcon
 import com.panl.pui.PuiRowIcon
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 
 /*
  * 应用层通用小件：按钮、信息行、说明文字、状态条。
@@ -205,6 +213,131 @@ fun Chevron(
         val tailX = if (direction > 0) w * 0.36f else w * 0.64f
         drawLine(color, Offset(tailX, h * 0.22f), Offset(tipX, h * 0.5f), stroke, StrokeCap.Round)
         drawLine(color, Offset(tipX, h * 0.5f), Offset(tailX, h * 0.78f), stroke, StrokeCap.Round)
+    }
+}
+
+/** 选中对勾（两段圆头线），比引一个 Material 图标轻。 */
+@Composable
+fun CheckMark(
+    size: Dp = 20.dp,
+    color: Color = MaterialTheme.colorScheme.primary,
+) {
+    Canvas(Modifier.size(size)) {
+        val w = this.size.width
+        val h = this.size.height
+        val stroke = 2.2.dp.toPx()
+        drawLine(color, Offset(w * 0.22f, h * 0.52f), Offset(w * 0.42f, h * 0.72f), stroke, StrokeCap.Round)
+        drawLine(color, Offset(w * 0.42f, h * 0.72f), Offset(w * 0.80f, h * 0.30f), stroke, StrokeCap.Round)
+    }
+}
+
+/**
+ * 可点击的「选择行」：图标 + 标题 + 副标题 + 任意尾随内容（对勾 / 箭头 / 色块）。
+ * 和 [PuiNavRow] 同一套排布，只是尾巴交给调用方。
+ */
+@Composable
+fun PuiChoiceRow(
+    icon: PuiIcon?,
+    title: String,
+    subtitle: String = "",
+    showDivider: Boolean = true,
+    trailing: @Composable () -> Unit = {},
+    onClick: () -> Unit,
+) {
+    Column {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (icon != null) {
+                PuiRowIcon(icon)
+                Spacer(Modifier.width(14.dp))
+            }
+            Column(Modifier.weight(1f)) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (subtitle.isNotEmpty()) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            trailing()
+        }
+        if (showDivider) PuiDivider(if (icon == null) 16.dp else 54.dp)
+    }
+}
+
+/**
+ * 分段控件：胶囊轨道 + 一块滑动的选中底板。
+ *
+ * 三段（跟随系统 / 浅色 / 深色）这种「互斥且数量少」的选择用它，
+ * 比三个 radio 行省空间。位置用 [Animatable] 而不是 `animateDpAsState`，
+ * 中途改选时从当前位置接着滑，不会先跳回旧位置。
+ */
+@Composable
+fun PuiSegmented(
+    items: List<String>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val pad = 3.dp
+    BoxWithConstraints(
+        modifier
+            .fillMaxWidth()
+            .height(36.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(scheme.surfaceContainerHighest)
+    ) {
+        val itemWidth = (maxWidth - pad * 2) / items.size
+        val pos = remember { Animatable(selectedIndex.toFloat()) }
+        LaunchedEffect(selectedIndex) {
+            pos.animateTo(selectedIndex.toFloat(), spring(dampingRatio = 0.78f, stiffness = 480f))
+        }
+        Box(
+            Modifier
+                .offset(x = pad + itemWidth * pos.value, y = pad)
+                .width(itemWidth)
+                .height(30.dp)
+                .clip(RoundedCornerShape(15.dp))
+                .background(scheme.surfaceContainerLowest)
+        )
+        Row(
+            Modifier
+                .fillMaxSize()
+                .padding(pad),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items.forEachIndexed { index, label ->
+                val selected = index == selectedIndex
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(15.dp))
+                        .clickable { onSelect(index) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (selected) scheme.onSurface else scheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
     }
 }
 

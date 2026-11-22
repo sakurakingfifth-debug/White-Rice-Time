@@ -9,7 +9,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -124,7 +123,7 @@ fun BalancePage(
             title = "余额明细",
             subtitle = "构成、多币种与全部变动记录",
             trailing = if (vm.history.isEmpty()) null else "${vm.history.size} 条",
-            dark = isSystemInDarkTheme(),
+            dark = Appearance.dark(),
             blue = vm.blueAccent,
             onOpen = { source ->
                 if (activity != null) {
