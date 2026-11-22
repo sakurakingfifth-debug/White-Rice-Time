@@ -6,6 +6,7 @@
 - 包名：`com.panl.balance`
 - 版本：`4.14`（versionCode 45）
 - 产物：`白饭时刻-4.14.apk`（8.4 MB，已签名可直接安装）
+- 成品包下载：[Releases · 最新版本](https://github.com/sakurakingfifth-debug/White-Rice-Time/releases/latest)
 - 编译基准：Kotlin 2.2.10 / Compose 1.10.4 / Material3 1.4.0 / AGP 9.2.1 / Gradle 9.4.1 / compileSdk 37 / minSdk 26
 
 ## 截图
