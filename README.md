@@ -500,18 +500,20 @@ HTTP 错误映射：
 
 ---
 
-## 十、对 PUI 主题库的改动（仅 3 处）
+## 十、对 PUI 主题库的改动（仅 4 处）
 
-按 README 的「方式 B：源码模块」接入，只做了三处向后兼容的扩展：
+按 README 的「方式 B：源码模块」接入，只做了四处向后兼容的扩展：
 
 1. `PuiTheme` 增加可选参数 `colorScheme: ColorScheme? = null` —— 传 null 时行为与原来完全一致，
    传值时替换整套配色，字阶与形状仍走 `PuiTypography` / `PuiShapes`。
 2. `PuiIcon` 增加 8 个图标（`Wallet` `Coin` `Key` `Refresh` `Eye` `EyeOff` `Settings` `Bolt`）及对应绘制分支，
    沿用 Iconsax Duotone Filled 的构造规则：纯实心、主形 100% + 辅助形 45%、24dp 网格。
-3. `PuiIcon` 再补 1 个 `Code`（`</>`，GitHub 入口用），绘制规则同上。
+3. `PuiIcon` 再补 1 个 `Code`（`</>`，GitHub 入口用）。
+4. `PuiIcon` 增加 `val res: Int = 0`，让枚举能指向 Iconsax 矢量资源（见第十四节）；这处改动对
+   库的既有调用完全透明 —— 不传 res 的图标行为不变。
 
 其余组件（`PuiGroup` / `PuiSwitchRow` / `PuiSliderRow` / `PuiFloatingNavBar` / `PuiTopBlur` / `PuiHaptics`）零改动。
-若日后用 AAR 替换源码，需要把这两处扩展重新补上。
+若日后用 AAR 替换源码，需要把这四处扩展重新补上。
 
 ---
 
@@ -731,7 +733,48 @@ $ adb shell dumpsys activity recents | grep panl
 
 ---
 
-## 十四、已知限制
+## 十四、图标：全部换成 Iconsax Duotone Filled（4.15）
+
+原来的图标是照 Iconsax 的构造规则手绘的（`PuiComponents.kt` 里的 `drawPuiIcon`），形状对但终究是「像」。
+4.15 起应用内所有图标都换成真素材。
+
+### 素材与生成
+
+数据源是 pui-demo 仓库的 `assets/icons/icons_iconsax.txt` —— 893 个图标，每行
+`显示名|透明度[e]@pathData|…`（`e` 表示 evenodd 填充，颜色一律丢弃，绘制时 tint）。
+
+`tools/gen_icons_from_iconsax.py` 把用到的 12 个转成 `res/drawable/ic_pui_*.xml`：
+24×24 viewport、逐层 `android:fillAlpha`（0.4 / 0.6 / 1.0 就是 duotone 的两层深浅）。
+
+| PuiIcon | Iconsax 素材 | 用在哪 |
+|---|---|---|
+| Coin | `Coin` | 底部导航「余额」 |
+| Settings | `Setting 2` | 底部导航「设置」 |
+| Refresh | `Refresh` | 首页刷新、自动刷新、检查更新 |
+| Key | `Key` | API 密钥、首页引导 |
+| Wallet | `Card Coin` | 余额明细 |
+| Eye / EyeOff | `Eye Slash`（去掉斜杠 / 原样） | 密钥显示与隐藏 |
+| Bolt | `Flash` | 后台常驻 |
+| Bell | `Notification Bing` | 实时更新、余额通知 |
+| Brush | `Brush 4` | DeepSeek 蓝主色 |
+| Glow | `Magic Star` | 低余额提醒、图标跟随壁纸 |
+| Code | `Code` | GitHub 入口 |
+
+### 接入方式
+
+`PuiIcon` 加了 `val res: Int = 0`：非 0 的图标 `PuiIconView` 走
+`Image(painterResource(res), colorFilter = ColorFilter.tint(color))` —— tint 会把矢量里那两层
+`fillAlpha` 保留下来，所以「图标跟随壁纸取色」仍然有效（只是整体换色，深浅关系不变）。
+
+为 0 的仍是手绘分支，只服务 PUI 库自己的图标（Element / Height / IconSize / Touch / Round /
+Phone / Split / SliderVertical / Selected），应用界面不用它们。
+
+**没动的图标**：启动图标（白饭碗）、快捷设置磁贴 `ic_tile_bowl`、通知小图标 `ic_notification`
+与通知按钮 —— 前两个是品牌图形，后两个在小尺寸下必须单色，duotone 上去只会糊。
+
+---
+
+## 十五、已知限制
 
 - **模糊链路需要 API 33+**（`RuntimeShader`）：低版本自动跳过顶部渐变模糊与导航栏玻璃模糊，
   只保留纯色渐隐，主题与组件不受影响。
@@ -746,7 +789,7 @@ $ adb shell dumpsys activity recents | grep panl
 
 ---
 
-## 十五、版本记录
+## 十六、版本记录
 
 | 版本 | 内容 |
 |---|---|
@@ -796,3 +839,4 @@ $ adb shell dumpsys activity recents | grep panl
 | 4.13 | 内存治理：接入公平运行内存（HyperOS）的 `itgsa.intent.action.TRIM` 预警 / 查杀广播，3 秒内回 Binder（`result` 0/1），查杀前 `commit` 落盘停留页面与加密的密钥草稿；新增 `PuiApp` 承载进程级监听与 `onTrimMemory`；自检面板拆成「无缝动画 / 内存」两段，展示 PSS、Java 堆、cgroup `memory.high` 与 `ApplicationExitInfo`（识别 `MemoryLimiter:AnonSwap`）；版本号改为从包信息读取 |
 | 4.14 | 新增「后台隐藏」：退到后台时把任务卡片从「最近任务」移除（整体 `onStop` 时 `finishAndRemoveTask`，跳过转屏与主动 finish）。先按 GKD 的 `setExcludeFromRecents` 实现，实测只改根 Intent 标志、对已有卡片无效，故改走确定性方案，详见第十二节 |
 | 4.15 | 设置 · 关于新增「GitHub 项目」「检查更新」两行；新增「软件更新」整页（版本对照 + 更新日志 + 检查更新 / GitHub 圆形入口），数据走 GitHub Releases 的三级兜底（API → atom → 302 跳转），见第十三节 |
+| 4.15 | 图标全部换成 Iconsax Duotone Filled 真素材：`tools/gen_icons_from_iconsax.py` 从 pui-demo 的 `icons_iconsax.txt` 生成 12 个 `ic_pui_*.xml`，`PuiIcon` 加 `res` 字段，`PuiIconView` 有资源走矢量 + tint，见第十四节 |

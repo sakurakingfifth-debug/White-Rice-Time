@@ -51,6 +51,10 @@ import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
+import com.panl.balance.R
 
 /**
  * PUI 原生控件集合。
@@ -356,11 +360,17 @@ object PuiSliderStyles {
 //  - 24×24 网格，元素留 4%–6% 安全边距。
 // 颜色默认取壁纸动态主色（LocalWallpaperAccent），跟着壁纸变。
 
-enum class PuiIcon {
+/**
+ * 图标枚举。
+ *
+ * [res] 非 0 时表示该图标改用 Iconsax Duotone Filled 矢量资源（`res/drawable/ic_pui_*.xml`），
+ * 为 0 的仍是下面手绘的 PUI 内部图标（Element / Height / Touch 这些只有本库自己用）。
+ */
+enum class PuiIcon(val res: Int = 0) {
     /** 尺寸 / 布局：左侧高条 + 右侧上下两个方块（element-2） */
     Element,
     /** 其他 / 更多：油漆桶 + 刷子（桶身浅、桶沿/刷柄实） */
-    Brush,
+    Brush(R.drawable.ic_pui_brush),
     /** 任务栏高度：浅色竖条 + 上下实心箭头 */
     Height,
     /** 图标大小：浅色外框 + 内部实心方块 */
@@ -376,35 +386,35 @@ enum class PuiIcon {
     /** 竖向滑轨：浅色轨道 + 上下两条实心横轨（slider-vertical） */
     SliderVertical,
     /** Dock 光效：同心光晕 + 中心高光 */
-    Glow,
+    Glow(R.drawable.ic_pui_glow),
     /** 已选中：浅色外圆 + 实心内圆（同心圆包着实心圆） */
     Selected,
 
     // ---- 以下 6 个为 PuiBalance 追加（同一套 Iconsax Duotone Filled 语言，24dp 网格）----
 
     /** 钱包：浅色包身 + 右侧卡扣 + 卡面条 */
-    Wallet,
+    Wallet(R.drawable.ic_pui_wallet),
     /** 余额：浅色圆盘 + 实心 ¥（比钱包更像「钱」，用于底部导航） */
-    Coin,
+    Coin(R.drawable.ic_pui_coin),
     /** 密钥：浅色匙环 + 实心匙柄与齿 */
-    Key,
+    Key(R.drawable.ic_pui_key),
     /** 刷新：开口圆环 + 箭头（描边 + 实心三角） */
-    Refresh,
+    Refresh(R.drawable.ic_pui_refresh),
     /** 显示密码：浅色眼形 + 实心瞳孔 */
-    Eye,
+    Eye(R.drawable.ic_pui_eye),
     /** 隐藏密码：眼形 + 斜杠 */
-    EyeOff,
+    EyeOff(R.drawable.ic_pui_eye_off),
     /** 设置：三条滑轨 + 错位把手 */
-    Settings,
+    Settings(R.drawable.ic_pui_settings),
     /** 通知：浅色铃身 + 实心铃舌 */
-    Bell,
+    Bell(R.drawable.ic_pui_bell),
     /** 后台常驻：实心闪电（Iconsax flash 的轮廓，两段折线围成） */
-    Bolt,
+    Bolt(R.drawable.ic_pui_bolt),
 
     // ---- 以下 1 个为 PuiBalance 追加（同上语言）----
 
     /** 代码 / 仓库：左右尖括号 + 中间斜杠（`</>`），用于 GitHub 入口 */
-    Code,
+    Code(R.drawable.ic_pui_code),
 }
 
 @Composable
@@ -413,8 +423,18 @@ fun PuiIconView(icon: PuiIcon, modifier: Modifier = Modifier, tint: Color? = nul
     val color = tint
         ?: wallpaper.takeIf { it != Color.Unspecified }
         ?: MaterialTheme.colorScheme.primary
-    Canvas(modifier.size(24.dp)) {
-        drawPuiIcon(icon, color)
+    if (icon.res != 0) {
+        // Iconsax Duotone Filled 资源：矢量里两层 fillAlpha 已经表达了明暗，tint 会把这套明暗保留下来
+        Image(
+            painter = painterResource(icon.res),
+            contentDescription = null,
+            modifier = modifier.size(24.dp),
+            colorFilter = ColorFilter.tint(color)
+        )
+    } else {
+        Canvas(modifier.size(24.dp)) {
+            drawPuiIcon(icon, color)
+        }
     }
 }
 
