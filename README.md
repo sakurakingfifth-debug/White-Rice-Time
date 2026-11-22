@@ -1,5 +1,7 @@
 # 白饭时刻（PuiBalance）
 
+我懒，这是大肥鱼写的README.md
+
 应用名「白饭时刻」，用 DeepSeek 的 API Key 直接查账户余额的 Android 应用。界面基于 **PUI 主题库**（Compose）：
 浅灰底（`#F0F1F3`）+ 纯白卡片（`#FFFFFF`）+ 20dp 圆角 + 克制字阶，强调色默认换成 DeepSeek 蓝。
 
