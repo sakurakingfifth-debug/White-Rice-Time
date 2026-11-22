@@ -237,13 +237,6 @@ fun AppearanceScreen(onBack: () -> Unit) {
                 }
             }
 
-            Text(
-                "主题色只影响主色（按钮、开关、图标、导航栏选中态），底与卡片的中性灰阶不跟着变，" +
-                    "否则深浅色下会脏。模糊关闭后顶栏是纯色渐变，不再实时采样。",
-                style = MaterialTheme.typography.bodyMedium,
-                color = scheme.onSurfaceVariant.copy(alpha = 0.75f),
-                modifier = Modifier.padding(horizontal = 4.dp)
-            )
         }
     }
 
