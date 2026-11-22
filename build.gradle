@@ -1,0 +1,16 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // 离线缓存里有这两个构件，但没有 plugin marker，所以走 classpath + apply plugin
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.10'
+        classpath 'org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.2.10'
+    }
+}
+
+plugins {
+    // AGP 9.2 支持到 API 37，要求 Gradle 9.4.1+ 与 JDK 17
+    id 'com.android.application' version '9.2.1' apply false
+}

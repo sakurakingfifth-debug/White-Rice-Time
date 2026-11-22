@@ -1,0 +1,85 @@
+apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+
+android {
+    namespace = 'com.panl.balance'
+    compileSdk = 37
+
+    defaultConfig {
+        applicationId = 'com.panl.balance'
+        minSdk = 26
+        targetSdk = 37
+        versionCode = 45
+        versionName = '4.14'
+    }
+
+    signingConfigs {
+        release {
+            // 密钥库不进仓库（公开 jks 等于让别人也能签出可覆盖安装的同包名 APK）。
+            // 本地有 signing/pui-balance.jks 就用它签名，没有就退化成未签名的 release 包，
+            // 这样 clone 下来的人不配置密钥也能正常构建。
+            def keystore = file('../signing/pui-balance.jks')
+            if (keystore.exists()) {
+                storeFile = keystore
+                storePassword = 'puibalance'
+                keyAlias = 'puibalance'
+                keyPassword = 'puibalance'
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = false
+            signingConfig = signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        compose = true
+    }
+
+    // 16 KB 页大小适配（Android 15+，Play 从 2025-11 起要求）
+    // https://developer.android.com/guide/practices/page-sizes
+    // useLegacyPackaging = false → .so 以未压缩 + 16 KB 对齐的方式打进 APK；
+    // AGP 8.5.1+ 默认就是这个行为，这里显式写死，避免以后改配置时悄悄回退。
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
+}
+
+// 与主题库保持一致的版本钉死（本地缓存限制）
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.emoji2:emoji2-views-helper:1.3.0'
+        force 'androidx.compose.material:material-ripple:1.10.4'
+        force 'androidx.activity:activity:1.8.2'
+        force 'androidx.activity:activity-ktx:1.8.2'
+    }
+}
+
+dependencies {
+
+    implementation 'androidx.activity:activity-compose:1.8.2'
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7'
+    implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.7'
+    implementation 'androidx.compose.ui:ui:1.10.4'
+    implementation 'androidx.compose.foundation:foundation:1.10.4'
+    implementation('androidx.compose.material3:material3:1.4.0') {
+        exclude group: 'androidx.activity', module: 'activity-compose'
+    }
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
+}

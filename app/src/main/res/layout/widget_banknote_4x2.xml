@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    「鲸元卷」4×2 纯图片插件：只有一张插画，没有文字、没有点击、不刷新。
+    图片放 drawable-nodpi（1080×540，2:1），centerCrop 保证任何格子比例下都铺满、不变形。
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/widget_banknote"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/widget_banknote_desc"
+        android:scaleType="centerCrop"
+        android:src="@drawable/widget_banknote" />
+</FrameLayout>

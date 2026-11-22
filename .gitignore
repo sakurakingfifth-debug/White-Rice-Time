@@ -1,0 +1,21 @@
+# 构建产物
+build/
+app/build/
+.gradle/
+.kotlin/
+captures/
+*.hprof
+
+# 本机配置与 IDE
+local.properties
+.idea/
+*.iml
+.DS_Store
+
+# 签名密钥库：不进仓库
+# 公开 jks 等于让别人也能签出可覆盖安装的同包名 APK，成品包走 GitHub Releases
+signing/*.jks
+signing/*.keystore
+
+# 本地导出的成品包（同样只走 Releases）
+/*.apk

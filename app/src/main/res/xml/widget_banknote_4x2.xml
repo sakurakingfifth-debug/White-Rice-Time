@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    纯展示型插件：updatePeriodMillis=0 —— 内容永远不变，不需要系统定期唤醒。
+    previewImage 用同一张图，选择插件时直接看到成品。
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_banknote_desc"
+    android:initialLayout="@layout/widget_banknote_4x2"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:previewImage="@drawable/widget_banknote"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="window_bg">#000000</color>
+
+    <!-- 桌面插件 -->
+    <color name="widget_text">#E1E3E0</color>
+    <color name="widget_dim">#9BA49E</color>
+    <color name="widget_divider">#26FFFFFF</color>
+    <color name="widget_track">#33FFFFFF</color>
+    <color name="widget_ok">#4ADE80</color>
+    <color name="widget_bad">#FF8A8A</color>
+</resources>

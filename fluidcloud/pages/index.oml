@@ -1,0 +1,76 @@
+<!--
+  流体云卡片模板（组合模板 modular / API 3.0.0+）
+  规范：https://open.oppomobile.com/documentation/page/info?id=12658
+
+  区域与 level 对应关系（与 App 内 BalanceNotifications.postLive 的字段一致）：
+    胶囊左侧  A*  服务图标   + B*  余额（≤5 字）
+    胶囊右侧  B0  更新时间（如「3 分钟前」）
+    面板顶部  D8  同步图标   + C10 更新时间
+    面板核心  D1  服务图标   + B1* 总余额 + C1 赠送 / 充值构成
+    面板底部  D13* 构成条（赠送 / 充值两段配色，百分比由 grantedPercent 传入）
+    面板按钮  E9* / E10* 刷新 / 打开（由 card-config.json 或 uiEvent 绑定）
+
+  约束（文档原文要点）：
+    - 模板内不允许用 CSS 改布局和样式，只能绑定变量与事件；
+    - 胶囊背景固定黑色，不可自定义；
+    - 同一实时活动内，信息扭转时胶囊样式不允许变化；
+    - 服务图标 A1* 必填，用于 AOD / 手表 / 气泡等入口兜底；
+    - 使用 compact 容器时，config.json 的入口 entry 必须配置 statusbar。
+-->
+<template>
+    <card-template entry="notification" category="modular" onclick="cardClick">
+        <compact>
+            <leading>
+                <image level="A*" src="{{ $r('images.icon_balance') }}"></image>
+                <text level="B*">{{ capsuleAmount }}</text>
+            </leading>
+            <trailing>
+                <text level="B0">{{ capsuleUpdated }}</text>
+            </trailing>
+        </compact>
+
+        <expanded level="F1*" bg-color="#0B0B0F" border-color="{{ accentColor }}">
+            <leading>
+                <image level="D8" src="{{ $r('images.icon_sync') }}"></image>
+                <text level="C10">{{ updatedText }}</text>
+            </leading>
+
+            <center category="common">
+                <image level="D1" src="{{ $r('images.icon_balance') }}"></image>
+                <text level="B1*">{{ amount }}</text>
+                <text level="C1">{{ composition }}</text>
+            </center>
+
+            <trailing category="progress">
+                <image level="D12" src="{{ $r('images.icon_gift') }}"></image>
+                <progress level="D13*" percent="{{ grantedPercent }}"
+                    color="{{ accentColor }}" bg-color="#2A2A33"></progress>
+            </trailing>
+        </expanded>
+
+        <voice>{{ voiceLabel }}</voice>
+        <image level="A1*" src="{{ $r('images.app_icon') }}"></image>
+    </card-template>
+</template>
+
+<data>
+{
+    "uiData": {
+        "capsuleAmount": "¥128",
+        "capsuleUpdated": "3 分钟前",
+        "amount": "¥128.50",
+        "composition": "赠送 ¥60.00 · 充值 ¥68.50",
+        "updatedText": "更新于 22:41",
+        "grantedPercent": 47,
+        "accentColor": "#4D6BFE",
+        "voiceLabel": "当前余额 128 元 5 角"
+    },
+    "uiEvent": {
+        "cardClick": {
+            "type": "deeplink",
+            "package": "com.panl.balance",
+            "uri": "puibalance://balance"
+        }
+    }
+}
+</data>

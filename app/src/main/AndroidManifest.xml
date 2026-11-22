@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Android 16 实时更新（Live Updates）要求的普通权限，非运行时权限 -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 后台常驻：前台服务 + Android 14 起要求显式声明的 specialUse 类型权限 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <application
+        android:name=".PuiApp"
+        android:allowBackup="false"
+        android:enableOnBackInvokedCallback="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.PuiBalance">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- 流体云卡片的 deeplink 落地点：puibalance://balance -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="balance"
+                    android:scheme="puibalance" />
+            </intent-filter>
+        </activity>
+
+        <!-- 余额明细页：由首页「余额明细」卡通过 ColorOS 无缝动画放大进入 -->
+        <activity
+            android:name=".ui.DetailActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.PuiBalance" />
+
+        <receiver
+            android:name=".notify.NotificationActionReceiver"
+            android:exported="false" />
+
+        <!--
+            后台常驻：specialUse 而非 dataSync —— Android 15 起 dataSync 前台服务 24 小时内只能跑 6 小时，
+            到点会被系统强停，撑不住「一直在后台运行」。specialUse 没有时间上限。
+        -->
+        <service
+            android:name=".notify.BalanceWatchService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="余额定时同步：按用户设定的间隔在后台刷新余额，并保持通知与桌面插件数据最新" />
+        </service>
+
+        <receiver
+            android:name=".notify.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 控制中心磁贴：显示余额，点击打开应用 -->
+        <service
+            android:name=".qs.BalanceTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_bowl"
+            android:label="@string/tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- 桌面插件：5 种尺寸，共用 BalanceWidgetProvider 的渲染逻辑 -->
+
+        <receiver
+            android:name=".widget.Widget1x1"
+            android:exported="true"
+            android:label="@string/widget_1x1_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_1x1" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.Widget2x1"
+            android:exported="true"
+            android:label="@string/widget_2x1_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_2x1" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.Widget2x2"
+            android:exported="true"
+            android:label="@string/widget_2x2_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_2x2" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.Widget4x2"
+            android:exported="true"
+            android:label="@string/widget_4x2_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_4x2" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.Widget4x4"
+            android:exported="true"
+            android:label="@string/widget_4x4_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_4x4" />
+        </receiver>
+
+        <!-- 鲸元卷 4×2：纯图片插件，不刷新、不响应点击 -->
+        <receiver
+            android:name=".widget.WidgetBanknote4x2"
+            android:exported="true"
+            android:label="@string/widget_banknote_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_banknote_4x2" />
+        </receiver>
+    </application>
+
+</manifest>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">白饭时刻</string>
+
+    <string name="widget_balance">余额</string>
+    <string name="widget_total">总余额</string>
+    <string name="widget_granted">赠送</string>
+    <string name="widget_topped">充值</string>
+    <string name="widget_refresh">刷新</string>
+    <string name="widget_brand">白饭时刻</string>
+    <string name="widget_1x1_label">白饭时刻 1×1</string>
+    <string name="widget_2x1_label">白饭时刻 2×1</string>
+    <string name="widget_2x2_label">白饭时刻 2×2</string>
+    <string name="widget_4x2_label">白饭时刻 4×2</string>
+    <string name="widget_4x4_label">白饭时刻 4×4</string>
+    <string name="widget_1x1_desc">只显示余额数字，最省空间</string>
+    <string name="widget_2x1_desc">余额 + 标题，横向一行</string>
+    <string name="widget_2x2_desc">余额与赠送 / 充值构成</string>
+    <string name="widget_4x2_desc">余额、状态与构成，横向宽卡</string>
+    <string name="widget_4x4_desc">完整余额面板，含构成条与刷新</string>
+    <string name="widget_banknote_label">白饭时刻 鲸元卷 4×2</string>
+    <string name="widget_banknote_desc">Deepseek 鲸元卷插画，纯图片</string>
+
+    <string name="notification_channel_live">余额实时更新</string>
+    <string name="notification_channel_live_desc">在状态栏与锁屏实时显示余额；ColorOS 上显示为流体云</string>
+    <string name="notification_channel_normal">余额通知</string>
+    <string name="notification_channel_normal_desc">常驻余额通知，不可滑走；展开可查看构成与更新时间</string>
+    <string name="notification_channel_service">后台同步</string>
+    <string name="notification_channel_service_desc">应用在后台运行时显示的前台服务通知，Android 要求常驻不可关闭</string>
+    <string name="notification_live_title">白饭时刻</string>
+    <string name="notification_normal_title">余额</string>
+    <string name="notification_service_text">后台同步中 · 每 %1$d 秒更新</string>
+    <string name="notification_balance_text">总余额 %1$s</string>
+    <string name="notification_composition">赠送 %1$s · 充值 %2$s</string>
+    <string name="notification_no_data">尚未同步</string>
+    <string name="notification_action_refresh">刷新</string>
+    <string name="notification_action_open">打开</string>
+    <string name="notification_action_stop">停止</string>
+
+    <string name="tile_label">余额</string>
+    <string name="tile_no_key">未配置密钥</string>
+    <string name="tile_no_data">尚未同步</string>
+</resources>
