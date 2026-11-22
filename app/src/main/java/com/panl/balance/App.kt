@@ -38,7 +38,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.panl.balance.ui.BalancePage
 import com.panl.balance.ui.BalanceViewModel
 import com.panl.balance.ui.Appearance
-import com.panl.balance.ui.AppearanceScreen
 import com.panl.balance.ui.BalanceTheme
 import com.panl.balance.ui.OtaScreen
 import com.panl.balance.ui.SettingsPage
@@ -76,11 +75,9 @@ fun App(vm: BalanceViewModel = viewModel()) {
         val lifecycleOwner = LocalLifecycleOwner.current
         var resumed by remember { mutableStateOf(false) }
 
-        // 「软件更新」「外观与导航栏」整页盖在最上层：不销毁下面的 Pager，返回时页面与滚动位置都还在
+        // 「软件更新」整页盖在最上层：不销毁下面的 Pager，返回时页面与滚动位置都还在
         var showOta by remember { mutableStateOf(false) }
-        var showAppearance by remember { mutableStateOf(false) }
         BackHandler(enabled = showOta) { showOta = false }
-        BackHandler(enabled = showAppearance) { showAppearance = false }
 
         DisposableEffect(lifecycleOwner) {
             val observer = LifecycleEventObserver { _, event ->
@@ -152,8 +149,7 @@ fun App(vm: BalanceViewModel = viewModel()) {
                         vm = vm,
                         topPad = blurHeight,
                         scroll = settingsScroll,
-                        onOpenOta = { showOta = true },
-                        onOpenAppearance = { showAppearance = true }
+                        onOpenOta = { showOta = true }
                     )
                 }
             }
@@ -195,23 +191,6 @@ fun App(vm: BalanceViewModel = viewModel()) {
                 }
             }
 
-            AnimatedVisibility(
-                visible = showAppearance,
-                enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
-                exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut(),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {}
-                ) {
-                    AppearanceScreen(onBack = { showAppearance = false })
-                }
-            }
         }
     }
 }

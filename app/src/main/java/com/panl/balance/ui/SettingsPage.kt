@@ -72,6 +72,7 @@ import com.panl.pui.PuiSwitchRow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.graphics.toArgb
 
 /** 设置页：密钥管理 + 刷新策略 + 提醒 + 外观 + 数据。 */
 @Composable
@@ -80,7 +81,6 @@ fun SettingsPage(
     topPad: Dp,
     scroll: ScrollState,
     onOpenOta: () -> Unit,
-    onOpenAppearance: () -> Unit,
 ) {
     val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
@@ -331,13 +331,30 @@ fun SettingsPage(
         }
 
         PuiGroup("外观") {
-            PuiNavRow(
-                icon = PuiIcon.Brush,
-                title = "外观与导航栏",
-                subtitle = "主题、主题色、模糊",
-                showDivider = false,
-                onClick = onOpenAppearance
-            )
+            // 这一行是 ColorOS 无缝动画的源 View：点下去像「余额明细」那样放大成整页
+            val activity = context.findActivity()
+            val rowCardColor = MaterialTheme.colorScheme.surfaceContainerLowest.toArgb()
+            SeamlessHost(
+                onOpen = { source ->
+                    if (activity != null) {
+                        val radiusPx = 20f * activity.resources.displayMetrics.density
+                        openAppearanceSeamless(
+                            activity = activity,
+                            source = source,
+                            radiusPx = radiusPx,
+                            fillColor = rowCardColor
+                        )
+                    }
+                }
+            ) { open ->
+                PuiNavRow(
+                    icon = PuiIcon.Brush,
+                    title = "外观与导航栏",
+                    subtitle = "主题、主题色、模糊",
+                    showDivider = false,
+                    onClick = open
+                )
+            }
         }
 
         PuiGroup("数据") {

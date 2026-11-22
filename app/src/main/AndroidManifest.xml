@@ -46,6 +46,13 @@
             android:parentActivityName=".MainActivity"
             android:theme="@style/Theme.PuiBalance" />
 
+        <!-- 外观与导航栏页：由设置页那一行通过 ColorOS 无缝动画放大进入 -->
+        <activity
+            android:name=".ui.AppearanceActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.PuiBalance" />
+
         <receiver
             android:name=".notify.NotificationActionReceiver"
             android:exported="false" />

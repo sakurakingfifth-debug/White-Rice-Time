@@ -821,6 +821,18 @@ Phone / Split / SliderVertical / Selected），应用界面不用它们。
 
 关掉开关时整条 `progressiveTopBlur` 不再挂上去，顶栏退回纯色渐隐（和 API < 33 的降级路径一致）。
 
+### 打开/关闭用无缝动画（4.16 改）
+
+一开始这一页是盖在主页面上的浮层（`AnimatedVisibility` 右滑入）。改成独立
+`AppearanceActivity` 是为了接 ColorOS 的**无缝动画** —— 和「余额明细」同一套：
+点击设置页那一行时，那一行会放大成整页，返回时缩回原处，用系统级 Spring（实测 564ms）。
+
+- 设置页那一行用 `SeamlessHost` 包了一层 `AndroidView(ComposeView)`：内容还是 Compose 画的，
+  但在系统看来它是一张能放大成全屏的卡片；
+- 转场由 `openAppearanceSeamless()` 调 `SeamlessView.open(...)` 发起，和非 ColorOS 机型
+  一样会自动退化成普通 `startActivity`；
+- 因此它不再销毁主页面之外的任何东西 —— 主页面本来就在下面，返回也不需要恢复状态。
+
 ### 余额磁贴也在这里
 
 原来设置页里的「控制中心」分组（余额磁贴说明 + 添加到控制中心按钮）整体搬进了本页底部 ——
