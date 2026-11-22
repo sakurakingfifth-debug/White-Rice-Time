@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.panl.balance.data.DeepSeekClient
+import com.panl.balance.data.UpdateClient
 import com.panl.balance.anim.SeamlessView
 import com.panl.balance.perf.MemoryGuard
 import com.panl.balance.qs.BalanceTileService
@@ -75,7 +76,12 @@ import kotlinx.coroutines.withContext
 
 /** 设置页：密钥管理 + 刷新策略 + 提醒 + 外观 + 数据。 */
 @Composable
-fun SettingsPage(vm: BalanceViewModel, topPad: Dp, scroll: ScrollState) {
+fun SettingsPage(
+    vm: BalanceViewModel,
+    topPad: Dp,
+    scroll: ScrollState,
+    onOpenOta: () -> Unit,
+) {
     val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -454,6 +460,18 @@ fun SettingsPage(vm: BalanceViewModel, topPad: Dp, scroll: ScrollState) {
             ) {
                 PuiInfoRow("版本", versionName)
             }
+            PuiNavRow(
+                icon = PuiIcon.Code,
+                title = "GitHub 项目",
+                subtitle = "${UpdateClient.OWNER}/${UpdateClient.REPO}",
+                onClick = { openUrl(context, UpdateClient.REPO_URL) }
+            )
+            PuiNavRow(
+                icon = PuiIcon.Refresh,
+                title = "检查更新",
+                subtitle = "查看版本、更新日志与下载",
+                onClick = onOpenOta
+            )
             PuiInfoRow("接口", "api.deepseek.com")
             Column(
                 Modifier.padding(16.dp),

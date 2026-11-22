@@ -1,7 +1,15 @@
 package com.panl.balance
 
 import android.os.Build
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -32,6 +40,7 @@ import com.panl.balance.ui.BalancePage
 import com.panl.balance.ui.BalanceViewModel
 import com.panl.balance.ui.DeepSeekDarkColors
 import com.panl.balance.ui.DeepSeekLightColors
+import com.panl.balance.ui.OtaScreen
 import com.panl.balance.ui.SettingsPage
 import com.panl.pui.PuiFloatingNavBar
 import com.panl.pui.PuiIcon
@@ -74,6 +83,10 @@ fun App(vm: BalanceViewModel = viewModel()) {
 
         val lifecycleOwner = LocalLifecycleOwner.current
         var resumed by remember { mutableStateOf(false) }
+
+        // 「软件更新」整页盖在最上层：不销毁下面的 Pager，返回时页面与滚动位置都还在
+        var showOta by remember { mutableStateOf(false) }
+        BackHandler(enabled = showOta) { showOta = false }
 
         DisposableEffect(lifecycleOwner) {
             val observer = LifecycleEventObserver { _, event ->
@@ -135,7 +148,12 @@ fun App(vm: BalanceViewModel = viewModel()) {
                         }
                     )
                 } else {
-                    SettingsPage(vm = vm, topPad = blurHeight, scroll = settingsScroll)
+                    SettingsPage(
+                        vm = vm,
+                        topPad = blurHeight,
+                        scroll = settingsScroll,
+                        onOpenOta = { showOta = true }
+                    )
                 }
             }
 
@@ -156,6 +174,25 @@ fun App(vm: BalanceViewModel = viewModel()) {
                             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                     )
             )
+
+            AnimatedVisibility(
+                visible = showOta,
+                enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
+                exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut(),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // 吞掉空白区的点击，避免穿透到下面的 Pager
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {}
+                ) {
+                    OtaScreen(onBack = { showOta = false })
+                }
+            }
         }
     }
 }

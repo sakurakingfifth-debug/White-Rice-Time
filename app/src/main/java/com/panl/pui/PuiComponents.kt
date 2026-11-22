@@ -400,6 +400,11 @@ enum class PuiIcon {
     Bell,
     /** 后台常驻：实心闪电（Iconsax flash 的轮廓，两段折线围成） */
     Bolt,
+
+    // ---- 以下 1 个为 PuiBalance 追加（同上语言）----
+
+    /** 代码 / 仓库：左右尖括号 + 中间斜杠（`</>`），用于 GitHub 入口 */
+    Code,
 }
 
 @Composable
@@ -716,6 +721,15 @@ private fun DrawScope.drawPuiIcon(icon: PuiIcon, color: Color) {
             }
             drawPath(boltPath(0.06f, 0.05f), sub)
             drawPath(boltPath(0f, 0f), main)
+        }
+        // 代码 / 仓库：两个尖括号（实心描边）+ 中间斜杠（浅色）
+        PuiIcon.Code -> {
+            val stroke = s * 0.085f
+            drawLine(main, p(0.36f, 0.24f), p(0.15f, 0.50f), stroke, StrokeCap.Round)
+            drawLine(main, p(0.15f, 0.50f), p(0.36f, 0.76f), stroke, StrokeCap.Round)
+            drawLine(main, p(0.64f, 0.24f), p(0.85f, 0.50f), stroke, StrokeCap.Round)
+            drawLine(main, p(0.85f, 0.50f), p(0.64f, 0.76f), stroke, StrokeCap.Round)
+            drawLine(sub, p(0.575f, 0.19f), p(0.425f, 0.81f), stroke, StrokeCap.Round)
         }
     }
 }

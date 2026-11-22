@@ -6,8 +6,8 @@
 浅灰底（`#F0F1F3`）+ 纯白卡片（`#FFFFFF`）+ 20dp 圆角 + 克制字阶，强调色默认换成 DeepSeek 蓝。
 
 - 包名：`com.panl.balance`
-- 版本：`4.14`（versionCode 45）
-- 产物：`白饭时刻-4.14.apk`（8.4 MB，已签名可直接安装）
+- 版本：`4.15`（versionCode 46）
+- 产物：`白饭时刻-4.15.apk`（8.4 MB，已签名可直接安装）
 - 成品包下载：[Releases · 最新版本](https://github.com/sakurakingfifth-debug/White-Rice-Time/releases/latest)
 - 编译基准：Kotlin 2.2.10 / Compose 1.10.4 / Material3 1.4.0 / AGP 9.2.1 / Gradle 9.4.1 / compileSdk 37 / minSdk 26
 
@@ -497,5 +497,302 @@ HTTP 错误映射：
 2. **无中转**：所有请求直连 `api.deepseek.com`，应用没有自建服务端，没有统计与上报。
 3. **不参与备份**：`android:allowBackup="false"`，避免密钥随云备份迁移。
 4. **已知上限**：root 设备仍可从运行进程内存读到明文；卸载重装后 Keystore 条目消失，需要重新填写。
+
+---
+
+## 十、对 PUI 主题库的改动（仅 3 处）
+
+按 README 的「方式 B：源码模块」接入，只做了三处向后兼容的扩展：
+
+1. `PuiTheme` 增加可选参数 `colorScheme: ColorScheme? = null` —— 传 null 时行为与原来完全一致，
+   传值时替换整套配色，字阶与形状仍走 `PuiTypography` / `PuiShapes`。
+2. `PuiIcon` 增加 8 个图标（`Wallet` `Coin` `Key` `Refresh` `Eye` `EyeOff` `Settings` `Bolt`）及对应绘制分支，
+   沿用 Iconsax Duotone Filled 的构造规则：纯实心、主形 100% + 辅助形 45%、24dp 网格。
+3. `PuiIcon` 再补 1 个 `Code`（`</>`，GitHub 入口用），绘制规则同上。
+
+其余组件（`PuiGroup` / `PuiSwitchRow` / `PuiSliderRow` / `PuiFloatingNavBar` / `PuiTopBlur` / `PuiHaptics`）零改动。
+若日后用 AAR 替换源码，需要把这两处扩展重新补上。
+
+---
+
+## 十一、内存治理：公平运行内存与内存限制器
+
+两家系统在同一个方向上加了两道闸，实现合在 `perf/MemoryGuard.kt` 一个文件里。
+
+### 11.1 公平运行内存（HyperOS）
+
+系统按**应用物理内存**（高优先级进程 PSS 之和，`oom_score_adj <= 200`）与**单进程 Java 堆**两个口径判定。
+触达预警线发广播、触达查杀线再发一次，应用必须在 **3 秒内**通过广播带回来的 Binder 回一个结果：
+
+| 位置 | key | 含义 | 类型 |
+|---|---|---|---|
+| `common` | `notifyType` | `1000` 物理内存异常 / `2000` Java 堆异常 | int |
+| `common` | `notifyId` | 本次通知 ID，回传要原样带上 | int |
+| `common` | `reason` | `Excessive PSS Usage` / `Excessive Java Heap Usage` | String |
+| `common` | `action` | `trim`（预警）/ `kill`（查杀） | String |
+| `common` | `callback` | 回传结果的 Binder | IBinder |
+| `extra` | `pss` / `pssLimit` | 高优进程 PSS 实际值与上限 | int（KB） |
+| `extra` | `heapSize` / `heapCapacity` | Java 堆已用与上限 | int（KB） |
+
+回传格式是 `int notifyType` + `int notifyId` + `int result` + `Bundle extra`，事务号
+`IBinder.FIRST_CALL_TRANSACTION`，单向发送；`result` 只有两种值：`0` 已正确处理（释放 / 保存），
+`1` 未正确处理。超时系统按「未处理」算，照样杀。
+
+落地要点：
+
+- **在 `Application.onCreate` 里注册**（`PuiApp`），不能等界面起来 —— 进程刚活就被判定内存异常时也得收到；
+- 注册在**独立 HandlerThread** 上（`RECEIVER_EXPORTED`，广播来自系统侧），落盘不占 UI 线程，
+  也不和 1/3 个刷新请求抢 3 秒窗口；
+- 广播字段少一层也不慌：拿不到 `common` 子 Bundle 时退回读顶层，`adb shell am broadcast` 因此可以直接自测；
+- **预警（trim）**：本应用没有图片加载库、没有 LruCache，PSS 大头是 Compose 与图形层
+  （`RenderEffect` / 纹理 / 字形缓存），应用侧改不了。所以释放动作只有一条有实际意义 ——
+  **不在前台时补一次 GC**（Compose 每帧产生大量短命对象，堆里绝大多数是可回收垃圾，
+  而查杀判定里「Java 堆」那一项主要吃这个）。可见时不 GC，避免掉帧；
+- **查杀（kill）**：3 秒内用 `commit()` 同步落盘，存「再打开能接上」的最小集合 —— 停留页面 +
+  没提交的密钥草稿（过 `SecretBox` 加密，不留明文）。`apply()` 在这里是不行的，进程一死就丢；
+- 非小米机型走 `Application.onTrimMemory`，两条路径收敛到同一个 `release()`，
+  自检面板里能看到最近一次是哪种。
+
+### 11.2 内存限制器（Android 17+）
+
+cgroup v2 的 `memory.high` 软限额。越过之后内核先逐出干净文件页、把非活跃匿名页压进 zRAM，
+表现为**短暂执行受限但不死**；只有 zRAM 也压不住（典型是失控泄漏）才会分配失败被杀，
+退出原因是 `REASON_OTHER` 且 description 含 `MemoryLimiter:AnonSwap`。
+
+这个应用能做的只有两件事，都已经成立：
+
+1. **不抬高天花板**：清单里没有 `largeHeap`，也没有申请任何「不受限」的豁免；
+2. **能自证**：自检面板直接读本进程的 `memory.high` / `memory.max` / `memory.swap.max`
+   （从 `/proc/self/cgroup` 找 `0::` 那一行的路径），并把 `ApplicationExitInfo` 里的上次退出原因
+   翻译成人话 —— 是 LMK、是限制器限流、还是崩溃。
+
+**没有做的事**：没有在清单里声明 app memory budget。本应用常态 PSS 只有几十兆，
+平台给前台的上限远高于此，主动设一个更紧的预算只会让自己更早被限流，没有收益。
+
+### 11.3 自检
+
+设置 → 关于 → **长按「版本」**，弹窗现在是两段：
+
+```
+无缝动画：设备 / 系统 / ColorOS / 动效等级 / SDK 类 / BUNDLE_RECT / BUNDLE_LIST_COVER / 上次点击
+内存：物理内存（PSS）/ Java 堆 / 软上限 / 硬上限 / 交换上限 / 上次退出 / 预警监听 /
+      预警·查杀次数 / 最近一次（PSS 与堆的实测值和上限）/ 回传结果（result 与耗时）
+```
+
+ `Debug.getPss()` 要读 smaps，几十毫秒级别，面板里是丢到 IO 线程算的 —— 文档明确要求别放主线程。
+
+### 11.4 真机实测（OnePlus PLK110 / Android 17 / API 37）
+
+| 观测项 | 结果 | 说明 |
+|---|---|---|
+| 物理内存 | 77–92 MB | 一个 Compose 页面树的常态，冷启动后稳定 |
+| Java 堆 | 6.6–13.1 / 256 MB | 离堆上限很远，查杀判定里这一项不会先触发 |
+| cgroup | `/apps/uid_10359/pid_21132` | cgroup v2 生效，且**每个进程单独一层** |
+| 限制器 | 已启用（按进程分组） | `apps/uid_x/pid_y` 这个布局就是 Android 17 内存限制器的产物，老版本只有 `apps/uid_x` |
+| `memory.high` / `memory.max` | **不可读（SELinux）** | 节点标着 `cgroup_v2`，普通应用没有读权限 —— 面板会把「没权限」和「内核没提供」分开报 |
+| 上次退出 | 原因码 16（应用被更新） | 覆盖安装导致，正常 |
+
+预警 / 查杀通路用 `adb shell am broadcast` 打过两轮（见下），日志确认：
+
+```
+11-12 16:39:13.470 19564 19599 W FairMemory: 广播里没有 callback Binder
+11-12 16:39:13.470 19564 19599 I FairMemory: release(物理内存 预警) visible=1
+```
+
+线程 19599 是 `fair-memory` 那条 HandlerThread，不是主线程 19564 —— 说明广播确实落在预期的线程上，
+`visible=1` 表示应用在前台所以跳过了 GC。另一条 `action=kill`（notifyType 2000）也走完没有异常。
+
+**结论**：`memory.high` 应用侧读不到，所以「本机限制器给了多少额度」是查不到的；
+但「限制器是否启用」可以通过 cgroup 是否按进程分层判断，这一条已经能自证。
+
+### 11.5 手动验证预警通路（模拟器 / 真机都能跑，不需要系统配合）：
+
+```bash
+adb shell am broadcast -a itgsa.intent.action.TRIM \
+  --ei notifyType 1000 --ei notifyId 7 \
+  --es action trim --es reason "Excessive PSS Usage" \
+  --ei pss 262144 --ei pssLimit 196608
+# 之后 logcat 里应该出现 FairMemory: release(物理内存 预警) visible=0
+```
+
+这条命令只验证「收得到、解析对、释放动作执行了」。**回调回不去**——`callback` 是系统侧的 Binder，
+adb 伪造不出来，看自检面板的「回传结果」会是「没有回调 Binder，结果无法回传」，属正常。
+
+真机实测（4.13，OnePlus PLK110）跑完上面这条命令后面板显示：
+
+```
+预警监听：已监听（itgsa.intent.action.TRIM）
+预警 / 查杀：1 / 0 次
+最近一次：预警（物理内存 · Excessive PSS Usage）；PSS 268435/196608 KB，堆 0/0 KB
+回传结果：没有回调 Binder，结果无法回传（0ms）
+```
+
+`0ms` 说明协议这一段没有任何多余等待 —— 真机上系统给的 3 秒窗口是够用的，
+真正花时间的是查杀分支的 `commit()` 落盘（实测也在毫秒级）。
+
+---
+
+## 十二、后台隐藏（4.14）
+
+设置 → 后台 → 「后台隐藏」。开启后，应用整体退到后台时任务卡片直接消失：任务列表里不会留下余额缩略图，
+也不会被误滑掉。参考 [GKD](https://github.com/gkd-kit/gkd) 的同名开关。
+
+### 为什么没有照抄 GKD 的做法
+
+GKD 的写法是 `activityManager.appTasks.forEach { it.setExcludeFromRecents(enabled) }`。
+照抄之后在 Android 16（API 36）实测无效，原因值得记一笔 —— `AppTask.setExcludeFromRecents` 的文档写得很直白：
+
+```java
+/**
+ * Modify the {@link Intent#FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS} flag in the root
+ * Intent of this AppTask.
+ */
+```
+
+它只改任务根 Intent 上的标志位。dumpsys 里能直接看到调用确实生效了（`0x00800000` 就是
+`FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS`）：
+
+```
+# 调用前
+intent={act=android.intent.action.MAIN ... flg=0x10200000 ...}
+# 调用后
+intent={flg=0x10800000 ...}     # 0x10000000 + 0x00800000
+```
+
+问题在于**最近任务列表是任务创建时就把卡片加进去的**，事后改标志不会把已有卡片摘掉；
+而重新启动又可能生成新任务、`appTasks` 拿到的是旧任务引用，标志直接丢。
+三条日志连着看就是「apply(hide=true) 成功 → 卡片还在」。
+
+### 现在的做法
+
+整个应用最后一个界面 `onStop` 时调 `finishAndRemoveTask()`：
+
+| 判断 | 理由 |
+|---|---|
+| 可见界面计数归零 | MainActivity 进 DetailActivity 时也会 stop，那会儿摘任务会把正在看的页面弄没 |
+| 跳过 `isChangingConfigurations` | 旋转屏幕不是「离开应用」，否则一转屏任务就没了 |
+| 跳过 `isFinishing` | 用户按返回主动退出时任务本来就会自己收摊，不用插手 |
+
+代价是下次打开变冷启动（实测 270–800ms），但停留页面、余额快照、密钥草稿都已经持久化，
+体感就是「重开了一下」，设置页的说明与确认弹窗里都写明了这一点。
+
+### 验证
+
+Android 16 模拟器（API 36）两端都跑过：
+
+```
+# 开启 + 退到后台
+FairMemory: release(UI_HIDDEN) visible=1
+FairMemory: stopped MainActivity visible=0 fin=false cfg=false hook=true
+Recents : 已移除任务卡片（后台隐藏）
+$ adb shell dumpsys activity recents | grep panl        # 无输出
+
+# 关闭 + 退到后台
+$ adb shell dumpsys activity recents | grep panl
+* Recent #1: Task{2e7ee5c #80 ... A=10220:com.panl.balance}   # 卡片还在
+```
+
+一个测试陷阱：用 `adb shell am start` 拉起后**立刻**按 HOME，页面还没 STARTED 就被 STOP，
+计数没涨过也就不会触发移除 —— 从桌面点图标不存在这个问题，别把它当成 bug。
+
+---
+
+## 十三、GitHub 入口与软件更新（4.15）
+
+设置 → 关于 里多了两行，样式照 PUI 安装器：
+
+| 行 | 行为 |
+|---|---|
+| GitHub 项目（`</>` 图标） | 打开 `https://github.com/sakurakingfifth-debug/White-Rice-Time` |
+| 检查更新（刷新图标） | 打开「软件更新」整页 |
+
+### 软件更新页
+
+- 顶栏返回 + 标题；头图是主色渐变 + 应用名；
+- 版本对照：当前版本（读包信息）/ 最新版本 / 状态（检查中 / 已是最新 / 发现 x.y.z / 检查失败）；
+- 当前版本日志：Release 正文，去掉 Markdown 记号后按纯文本展示；
+- 发现新版本时多出一个「下载 x.y.z」主按钮（优先 APK 直链，没有就跳 Release 页）；
+- 底部两个圆形入口：检查更新（重新拉取）、GitHub。
+
+整页是**盖在 Pager 之上的一层**而不是新 Activity：`AnimatedVisibility` 从右侧滑入，
+下面那一页不销毁，返回时滚动位置和状态都还在；返回用 `BackHandler` 接系统返回键。
+
+### 数据来源：三级兜底
+
+| 顺序 | 通道 | 拿到什么 | 备注 |
+|---|---|---|---|
+| 1 | `api.github.com/repos/…/releases/latest` | 版本 + 日志 + APK 直链 | 未鉴权，60 次/小时/IP |
+| 2 | `github.com/…/releases.atom` | 版本 + 日志 | 不吃 API 配额，正文是转义过的 HTML，需要转纯文本 |
+| 3 | `github.com/…/releases/latest`（不跟随 302） | 只有版本号 | 从 `Location` 里抠 `/tag/xxx` |
+
+真机上就撞上了：这台 OPPO PMX110 访问 API 一直 403（同一个接口在电脑上是 200、剩余配额 59），
+所以实际生效的是第 2 条通道 —— 版本和日志都有，只是界面上会提示一句 API 的失败原因。
+这也是为什么当初没把「检查更新」做成只依赖 API。
+
+---
+
+## 十四、已知限制
+
+- **模糊链路需要 API 33+**（`RuntimeShader`）：低版本自动跳过顶部渐变模糊与导航栏玻璃模糊，
+  只保留纯色渐隐，主题与组件不受影响。
+- **只有余额，没有用量**：DeepSeek 公开接口不返回 token 用量与消费明细，所以不做趋势图，
+  历史记录只是本地采样。
+- **后台常驻要自己担风险**：前台服务会被 OEM 的省电策略针对，ColorOS 上还要在系统弹窗里点「允许」；关掉开关或清空密钥后服务立即停止，不会偷偷跑。
+- **单账户**：一个应用实例只保存一个 API Key。
+- **无缝动画已在 ColorOS 17 真机确认生效**（OnePlus PLK110，见第五节「真机验证」），ColorOS 16.1 / 16.0 未复测。
+- **公平运行内存只验证到「收得到、解析对、动作执行」**：`callback` 是系统侧提供的 Binder，adb 伪造不出来，
+  真机上系统是否接受我们的 `result` 还需要让应用真的涨到预警线才能看到（自检面板的「回传结果」会给出答案）。
+- **插件刷新受系统调度**：`updatePeriodMillis` 最短 30 分钟，且低电量模式下会被推迟；需要即时数据请打开应用或点 4×4 的「刷新」。
+
+---
+
+## 十五、版本记录
+
+| 版本 | 内容 |
+|---|---|
+| 1.0 | 首个版本：余额查询、多币种、密钥加密、自动刷新、低余额提醒、余额变动记录、深色模式 |
+| 1.1 | 应用名改为「白饭时刻」；关于页补充应用名与版本号 |
+| 1.2 | 外观说明文案改为「关闭后改用 PUI Themed 的主题色」 |
+| 1.3 | 新增 1×1 / 2×1 / 2×2 / 4×2 / 4×4 五种桌面插件 |
+| 1.4 | 插件字号整体放大（金额 18–40sp、标签 11–13sp），1×1 收紧内边距防截断 |
+| 1.5 | 新增实时更新通知（Android 16 Live Updates）与普通余额通知，设置页可分别开关 |
+| 1.6 | 按流体云规范优化实时更新（胶囊 ≤5 字、构成条双色、刷新 / 打开双按钮），新增流体云状态与卡片模板源码 |
+| 1.7 | 换成插画图标：按自适应图标规范重做（去文字条、86% 安全区、单色层、WebP 各密度） |
+| 1.8 | 新增余额明细页；接入 ColorOS View 无缝动画（反射桥接，非 OPPO 设备自动降级） |
+| 1.9 | 修正无缝动画的 SDK 类名（`com.oplus.animation.OplusViewSeamless`），新增自检面板 |
+| 2.0 | 亮色背景改为中性灰 `#F0F1F3`（卡片保持纯白），深色不变 |
+| 2.1 | 设置页隐藏「流体云」状态行与说明文字 |
+| 2.2 | 详情页接入预测性手势返回，手势进度驱动页面缩回源卡片（落点与无缝动画一致） |
+| 2.3 | 修复预测性返回撤回时崩溃退出（缺帧时钟）、进度恒 0 不跟手，松手改按实际位移判定 |
+| 2.4 | 余额通知改为常驻（滑不走）；新增「允许一直在后台运行」开关（specialUse 前台服务按间隔后台同步，ColorOS 上由系统弹窗确认） |
+| 2.5 | 修预测性返回跟手：进度改用「触摸点位移」而不是绝对坐标（右边缘起手会瞬间缩到底），进度直写 Compose 状态避免回调排队抖动，`graphicsLayer` 属性无条件赋值防残留，松手判定改用进度 |
+| 2.6 | 新增控制中心磁贴：PUI 风格饭碗图标 + 余额（精确到分），点击打开应用；设置页可一键添加到控制中心 |
+| 2.7 | 修磁贴不显示金额：金额从 `subtitle` 移到 `label`（ColorOS 等 ROM 只渲染 label，之前界面上只剩「余额」两个字） |
+| 2.8 | 磁贴饭碗图标改圆：碗身底部换成一条连续的大半径曲线，去掉直边与硬拐角 |
+| 2.9 | 新增 4×2「鲸元卷」纯图片插件：只展示插画，无文字、不刷新、不响应点击 |
+| 3.0 | 设置页「后台」分组文案理顺：同步间隔写进开关副标题（与「刷新间隔」同源），系统弹窗说明紧跟开关，「后台同步」状态行只留运行状态 |
+| 3.1 | 去掉「控制中心」分组里「余额磁贴」行与按钮之间的分割线 |
+| 3.2 | 关于页隐藏「无缝动画」行，自检面板改为长按「版本」打开 |
+| 3.3 | 修预测性返回的「缩两次」与打断闪现：提交时不再自己补动画（交回无缝动画），预览收小到 8%，打断回弹时从当前进度接着走而不是清零 |
+| 3.4 | 修「返回困难」：`onBackInvoked` 的撤回阈值从 0.15 降到 0.02（快速小幅划动不再被判成撤回），去掉预览的圆角裁切（少一层离屏图层） |
+| 3.5 | 预测性返回改成和无缝动画同一套几何：手势期间把整页按**卡片矩形**非等比压缩（p=1 正好盖住卡片），提交补完 90ms 再 finish，关闭转场在 onCreate 里就置零 |
+| 3.6 | 撤回 3.5 的「按卡片矩形收缩」（真机上和无缝动画叠成缩两次）；流体云胶囊去掉重复的 ¥ —— 图标已经是 ¥，文字只留两位小数（`24.03`） |
+| 3.7 | 首页蓝色主卡下方新增「用量统计」：今日消耗 / 近 7 天 / 7 天柱状图，按本地余额下降累计（DeepSeek 无 token 用量接口） |
+| 3.8 | 修流体云进度条游标：不设 `setProgressTrackerIcon` 时系统拿应用图标兜底，真机上渲染成黑底白箭头；改为饭碗图标 |
+| 3.9 | 新增高低峰判断：`data/PeakHours.kt` 按北京时间算 DeepSeek 高峰（工作日 9–12、14–18）与低峰，主卡加角标、用量卡加「距切换还有多久」 |
+| 4.0 | 修无缝动画后「卡片压住悬浮导航栏」：动画结束时源 View 的 surface 没归还，回到前台重建一次源 View（`SeamlessView.requestReset` + `key(generation)`） |
+| 4.1 | 首页把「余额明细」入口卡挪到「用量统计」上面 |
+| 4.2 | 修滑块拉到最小时圆钮外面那圈绿色左右不等宽（左 3dp / 右 5dp）：已选段改成以圆钮为中心左右各留 gap，并去掉 `trackH` 下限 |
+| 4.3 | 滑块圆钮外圈改成真正的同心圆：圆环用 `drawCircle`（半径 = 轨道半高）画，不再靠圆角矩形兜；圆钮行程两端各留 12dp，和轨道圆头对齐 |
+| 4.4 | 滑块已选段改成「左圆头 + 直条 + 圆环收口」：圆角矩形的右圆头和圆环相交会凹出「腰」，看着像葫芦 |
+| 4.5 | 明细页返回动画不再自己缩放：ColorOS 的预测性返回本来就会缩放 + 淡出窗口，再叠一层就成两页重影；现在只用回调判断「松手算不算返回」 |
+| 4.6 | **明细页不再注册返回回调**：注册 `OnBackAnimationCallback` 会让系统把手势预览让给应用（不画就没反馈），且提交时走系统的淡出而不是 Activity 的无缝关闭转场 |
+| 4.7 | 回到 3.5 方案：注册回调 + 按**卡片矩形**做非等比预览（p=1 盖住卡片），提交补 90ms 再 finish，`overrideActivityTransition(CLOSE,0,0)` 放在 onCreate；`PREVIEW_REACH` 可调 |
+| 4.8 | **彻底关掉预测性返回**：清单 `enableOnBackInvokedCallback=false`，明细页不注册任何回调，返回只走 Activity 的无缝关闭转场 |
+| 4.9 | 按官方文档（id=13772）重做无缝动画接入：补传 `BUNDLE_RECT`（卡片实际区域）与 `BUNDLE_LIST_COVER`（顶部渐隐 / 导航栏遮挡比例），自检面板显示这两个 key 是否可用 |
+| 4.10 | 回滚两处「嫌疑」：清单 `enableOnBackInvokedCallback` 回到 `true`；去掉 4.0 的「返回后重建源 View」（`ON_RESUME` 落在动画中间会销毁源 View，退回默认淡出） |
+| 4.11 | 按 PUI 1.0.70 主题库对齐组件：补齐 `headlineMedium`/`bodyLarge`/`bodySmall`/`labelSmall` 字阶；滑块换成库里的 `endInset = max(轨道半径, 圆钮半径)` 几何 + `PuiSliderStyles` + 刻度点；滑块行置灰整行 0.45；`PuiGroup` 去掉多余的 `clip()` |
+| 4.12 | 16 KB 页大小适配：显式 `packaging { jniLibs { useLegacyPackaging = false } }`，实测 4 个 ABI 的 `libandroidx.graphics.path.so` 均为 Stored + `zipalign -P 16` 通过 + `PT_LOAD p_align=16384` |
 | 4.13 | 内存治理：接入公平运行内存（HyperOS）的 `itgsa.intent.action.TRIM` 预警 / 查杀广播，3 秒内回 Binder（`result` 0/1），查杀前 `commit` 落盘停留页面与加密的密钥草稿；新增 `PuiApp` 承载进程级监听与 `onTrimMemory`；自检面板拆成「无缝动画 / 内存」两段，展示 PSS、Java 堆、cgroup `memory.high` 与 `ApplicationExitInfo`（识别 `MemoryLimiter:AnonSwap`）；版本号改为从包信息读取 |
 | 4.14 | 新增「后台隐藏」：退到后台时把任务卡片从「最近任务」移除（整体 `onStop` 时 `finishAndRemoveTask`，跳过转屏与主动 finish）。先按 GKD 的 `setExcludeFromRecents` 实现，实测只改根 Intent 标志、对已有卡片无效，故改走确定性方案，详见第十二节 |
+| 4.15 | 设置 · 关于新增「GitHub 项目」「检查更新」两行；新增「软件更新」整页（版本对照 + 更新日志 + 检查更新 / GitHub 圆形入口），数据走 GitHub Releases 的三级兜底（API → atom → 302 跳转），见第十三节 |
