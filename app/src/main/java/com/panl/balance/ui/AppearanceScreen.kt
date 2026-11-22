@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -47,7 +46,12 @@ import com.panl.pui.PuiSwitchRow
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalDensity
+import com.panl.pui.progressiveTopBlur
+import com.panl.pui.rememberPuiTopBlurHeight
+import com.panl.pui.PuiTopFade
+import com.panl.pui.PuiPageTitle
+import androidx.compose.foundation.layout.offset
 
 /**
  * 外观与导航栏：明暗、主题色、模糊，参考 PUI 安装器的同名页面。
@@ -62,47 +66,45 @@ fun AppearanceScreen(onBack: () -> Unit) {
     var tileHint by remember { mutableStateOf<String?>(null) }
     val custom = Appearance.accentMode == Prefs.MODE_CUSTOM
 
-    // 标题贴着状态栏，只有下面的滚动区带顶部模糊：
-    // 内容往上滚时在标题栏下沿虚化，而不是被硬切一刀
+    // 完全照主页（设置页）的做法：大标题跟着列表滚，顶部模糊带从屏幕顶端算起，
+    // 内容滚进带子里逐渐虚化。标题用 PuiPageTitle，和「设置」同一个字号。
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val blurHeight = rememberPuiTopBlurHeight()
+    val density = LocalDensity.current
+    val topBlurRadius = with(density) { Appearance.topBlurPx.toDp() }
 
-    Column(
+    Box(
         Modifier
             .fillMaxSize()
             .background(scheme.background)
-            .systemBarsPadding()
     ) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(start = 8.dp, end = 16.dp, top = 2.dp, bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .clickable(onClick = onBack),
-                contentAlignment = Alignment.Center
-            ) {
-                Chevron(size = 18.dp, color = scheme.onSurface, direction = -1)
-            }
-            Spacer(Modifier.width(2.dp))
-            Text(
-                "外观与导航栏",
-                style = MaterialTheme.typography.headlineSmall,
-                color = scheme.onSurface
-            )
-        }
-
-        Box(Modifier.fillMaxSize()) {
         Column(
             Modifier
                 .fillMaxSize()
+                .then(
+                    if (Appearance.blurEnabled) {
+                        Modifier.progressiveTopBlur(blurHeight, maxRadius = topBlurRadius)
+                    } else {
+                        Modifier
+                    }
+                )
                 .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 26.dp, bottom = 32.dp + bottomInset),
+                .padding(start = 16.dp, end = 16.dp, top = blurHeight + 4.dp, bottom = 32.dp + bottomInset),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(36.dp)
+                        .offset(x = (-8).dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onBack),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Chevron(size = 18.dp, color = scheme.onSurface, direction = -1)
+                }
+                PuiPageTitle("外观与导航栏")
+            }
             PuiGroup("控制中心") {
                 PuiInfoRow(
                     "余额磁贴",
@@ -249,19 +251,7 @@ fun AppearanceScreen(onBack: () -> Unit) {
 
         }
 
-            // 顶部渐隐：内容滚到标题下方时淡出成背景色
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(26.dp)
-                    .align(Alignment.TopCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(scheme.background, scheme.background.copy(alpha = 0f))
-                        )
-                    )
-            )
-        }
+        PuiTopFade(height = blurHeight, topAlpha = 0.5f)
     }
 
     if (showArgbDialog) {
