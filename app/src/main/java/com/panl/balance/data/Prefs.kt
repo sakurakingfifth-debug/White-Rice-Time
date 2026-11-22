@@ -157,7 +157,21 @@ class Prefs(context: Context) {
         }
 
     var history: List<HistoryEntry>
-        get() = sp.getString(K_HISTORY, null)?.let { raw ->
+        get() = readHistory(K_HISTORY)
+        set(value) = writeHistory(K_HISTORY, value)
+
+    /**
+     * 回收站：被「清空」掉的余额记录先挪到这里，**只有在回收站里彻底删除才算真删**。
+     *
+     * 存的字段和 [history] 一样（`at` / `currency` / `total`），所以恢复就是原样搬回去 ——
+     * 不需要额外记「删于何时」，用户看的是记录本身的时刻。
+     */
+    var trash: List<HistoryEntry>
+        get() = readHistory(K_TRASH)
+        set(value) = writeHistory(K_TRASH, value)
+
+    private fun readHistory(key: String): List<HistoryEntry> =
+        sp.getString(key, null)?.let { raw ->
             runCatching {
                 val arr = JSONArray(raw)
                 buildList {
@@ -174,19 +188,20 @@ class Prefs(context: Context) {
                 }
             }.getOrNull()
         }.orEmpty()
-        set(value) {
-            val arr = JSONArray()
-            value.forEach { e ->
-                arr.put(
-                    JSONObject().apply {
-                        put("at", e.at)
-                        put("currency", e.currency)
-                        put("total", e.total)
-                    }
-                )
-            }
-            sp.edit().putString(K_HISTORY, arr.toString()).apply()
+
+    private fun writeHistory(key: String, value: List<HistoryEntry>) {
+        val arr = JSONArray()
+        value.forEach { e ->
+            arr.put(
+                JSONObject().apply {
+                    put("at", e.at)
+                    put("currency", e.currency)
+                    put("total", e.total)
+                }
+            )
         }
+        sp.edit().putString(key, arr.toString()).apply()
+    }
 
     private fun snapshotToJson(s: BalanceSnapshot): JSONObject {
         val items = JSONArray()
@@ -263,6 +278,7 @@ class Prefs(context: Context) {
         private const val K_BACKGROUND = "background_run"
         private const val K_SNAPSHOT = "last_snapshot"
         private const val K_HISTORY = "history"
+        private const val K_TRASH = "history_trash"
         private const val K_UI_PAGE = "ui_page"
         private const val K_KEY_DRAFT = "key_draft"
         private const val K_HIDE_RECENTS = "hide_from_recents"

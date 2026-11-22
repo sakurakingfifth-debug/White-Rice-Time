@@ -98,6 +98,7 @@ fun SettingsPage(
     var permGranted by remember { mutableStateOf(NotificationPermission.granted(context)) }
     var pendingToggle by remember { mutableStateOf(PendingToggle.None) }
     var showSeamless by remember { mutableStateOf(false) }
+    var confirmClear by remember { mutableStateOf(false) }
     var hideConfirm by remember { mutableStateOf(false) }
 
     fun applyToggle(kind: PendingToggle, enabled: Boolean) {
@@ -364,9 +365,58 @@ fun SettingsPage(
                 vm.snapshot?.let { Fmt.clock(it.fetchedAt) } ?: "无",
                 showDivider = true
             )
-            Column(Modifier.padding(16.dp)) {
-                PuiGhostButton("清空余额记录", Modifier.fillMaxWidth()) { vm.clearHistory() }
+            // 回收站：清空后的记录先放这里，只有进去彻底删除才真删
+            val activity = context.findActivity()
+            val rowCardColor = MaterialTheme.colorScheme.surfaceContainerLowest.toArgb()
+            SeamlessHost(
+                onOpen = { source ->
+                    if (activity != null) {
+                        openSeamless(
+                            activity = activity,
+                            source = source,
+                            radiusPx = 20f * activity.resources.displayMetrics.density,
+                            fillColor = rowCardColor,
+                            target = TrashActivity::class.java
+                        )
+                    }
+                }
+            ) { open ->
+                PuiNavRow(
+                    icon = PuiIcon.Refresh,
+                    title = "回收站",
+                    subtitle = if (vm.trash.isEmpty()) {
+                        "清空后的余额记录会先放到这里"
+                    } else {
+                        "已暂存 ${vm.trash.size} 条，进去可恢复或彻底删除"
+                    },
+                    onClick = open
+                )
             }
+            Column(Modifier.padding(16.dp)) {
+                PuiGhostButton("清空余额记录", Modifier.fillMaxWidth()) { confirmClear = true }
+            }
+        }
+
+        if (confirmClear) {
+            AlertDialog(
+                onDismissRequest = { confirmClear = false },
+                title = { Text("清空余额记录？") },
+                text = {
+                    Text(
+                        "这 ${vm.history.size} 条记录会被移出「余额记录」，放到回收站里暂存。\n\n" +
+                            "在回收站里可以恢复，也可以彻底删除 —— 彻底删除之后才无法恢复。"
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        vm.clearHistory()
+                        confirmClear = false
+                    }) { Text("移入回收站") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { confirmClear = false }) { Text("取消") }
+                }
+            )
         }
 
         if (showSeamless) {

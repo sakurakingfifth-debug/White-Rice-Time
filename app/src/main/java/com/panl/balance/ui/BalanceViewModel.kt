@@ -12,6 +12,7 @@ import com.panl.balance.data.BalanceSnapshot
 import com.panl.balance.data.DeepSeekClient
 import com.panl.balance.data.HistoryEntry
 import com.panl.balance.data.Prefs
+import com.panl.balance.data.Trash
 import com.panl.balance.notify.BalanceNotifications
 import com.panl.balance.notify.BalanceWatchService
 import com.panl.balance.perf.MemoryGuard
@@ -59,6 +60,9 @@ class BalanceViewModel(app: Application) : AndroidViewModel(app), MemoryGuard.Sc
 
     var history by mutableStateOf(prefs.history)
         private set
+
+    /** 回收站内容（单一数据源在 [Trash]，设置页和回收站页共用）。 */
+    val trash: List<HistoryEntry> get() = Trash.entries
 
     var verify by mutableStateOf<VerifyState>(VerifyState.Idle)
         private set
@@ -169,6 +173,8 @@ class BalanceViewModel(app: Application) : AndroidViewModel(app), MemoryGuard.Sc
 
     /** 回到前台时调用：缓存超过 30 秒才真正发请求，避免来回切页狂刷。 */
     fun onForeground() {
+        // 回收站里恢复过记录的话，磁盘上的 history 比内存新，回前台先对齐
+        prefs.history.takeIf { it != history }?.let { history = it }
         // 后台常驻可能被通知上的「停止」或系统回收改掉，回到前台以磁盘为准重新对齐
         backgroundRun = prefs.backgroundRun
         if (backgroundRun) BalanceWatchService.ensureRunning(getApplication())
@@ -296,9 +302,24 @@ class BalanceViewModel(app: Application) : AndroidViewModel(app), MemoryGuard.Sc
         prefs.hideFromRecents = value
     }
 
+    /**
+     * 清空余额记录 —— 注意**不是真删**：整批挪进回收站，用户还能在回收站里恢复。
+     *
+     * 真删只发生在回收站里（[purgeTrash] / [purgeTrashEntry]）。
+     */
     fun clearHistory() {
+        if (history.isEmpty()) return
+        val moved = history
         history = emptyList()
         prefs.history = emptyList()
+        Trash.addAll(moved)
+    }
+
+    /** 回收站里恢复一条：搬回记录并重新按时间排序。 */
+    fun restoreTrashEntry(entry: HistoryEntry) {
+        Trash.remove(entry)
+        history = (history + entry).sortedByDescending { it.at }
+        prefs.history = history
     }
 
     // ---------------- 跳转辅助 ----------------

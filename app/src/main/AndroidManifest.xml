@@ -53,6 +53,13 @@
             android:parentActivityName=".MainActivity"
             android:theme="@style/Theme.PuiBalance" />
 
+        <!-- 回收站：清空后的余额记录暂存于此，彻底删除才真删 -->
+        <activity
+            android:name=".ui.TrashActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.PuiBalance" />
+
         <receiver
             android:name=".notify.NotificationActionReceiver"
             android:exported="false" />

@@ -47,8 +47,19 @@ fun SeamlessHost(
  * @param fillColor 行以外的补边色，取卡片底色
  */
 fun openAppearanceSeamless(activity: android.app.Activity, source: View, radiusPx: Float, fillColor: Int) {
+    openSeamless(activity, source, radiusPx, fillColor, AppearanceActivity::class.java)
+}
+
+/** 通用版：把任意 Activity 当作放大目标（回收站、外观页都走这条）。 */
+fun openSeamless(
+    activity: android.app.Activity,
+    source: View,
+    radiusPx: Float,
+    fillColor: Int,
+    target: Class<out android.app.Activity>,
+) {
     val rect = Rect().also { source.getGlobalVisibleRect(it) }
-    val intent = Intent(activity, AppearanceActivity::class.java).apply {
+    val intent = Intent(activity, target).apply {
         putExtra(AppearanceActivity.EXTRA_RECT, rect)
         putExtra(AppearanceActivity.EXTRA_RADIUS, radiusPx)
     }

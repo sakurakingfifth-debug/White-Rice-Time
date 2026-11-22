@@ -3,6 +3,7 @@ package com.panl.balance
 import android.app.Application
 import com.panl.balance.data.Prefs
 import com.panl.balance.perf.MemoryGuard
+import com.panl.balance.data.Trash
 import com.panl.balance.ui.Appearance
 import com.panl.balance.ui.Recents
 
@@ -21,6 +22,7 @@ class PuiApp : Application() {
     override fun onCreate() {
         super.onCreate()
         Appearance.load(this)
+        Trash.load(this)
         MemoryGuard.install(this)
         MemoryGuard.trackVisibility(this)
         // 后台隐藏：整个应用退到后台时摘掉任务卡片（开关在设置页「后台」里，默认关闭）
