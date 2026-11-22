@@ -105,7 +105,7 @@ fun AppearanceScreen(onBack: () -> Unit) {
                 }
                 PuiPageTitle("外观与导航栏")
             }
-            PuiGroup("控制中心") {
+            PuiGroup(title = null) {
                 PuiInfoRow(
                     "余额磁贴",
                     "",
