@@ -109,8 +109,8 @@ class DetailActivity : ComponentActivity() {
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.weight(1f)
                             )
-                            PuiCircleIconButton(enabled = !loading, onClick = {
-                                if (loading) return@PuiCircleIconButton
+                            RefreshButton(loading = loading) {
+                                if (loading) return@RefreshButton
                                 loading = true
                                 scope.launch {
                                     runCatching { BalanceSync.fetchAndStore(applicationContext) }
@@ -118,12 +118,6 @@ class DetailActivity : ComponentActivity() {
                                     history = prefs.history
                                     loading = false
                                 }
-                            }) {
-                                Text(
-                                    if (loading) "…" else "刷新",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
                             }
                         }
 

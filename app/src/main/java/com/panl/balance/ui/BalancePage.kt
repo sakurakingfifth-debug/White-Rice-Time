@@ -184,30 +184,6 @@ fun BalancePage(
 }
 
 @Composable
-private fun RefreshButton(loading: Boolean, onClick: () -> Unit) {
-    val transition = rememberInfiniteTransition(label = "refresh-spin")
-    val angle by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 900, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "refresh-angle"
-    )
-
-    PuiCircleIconButton(enabled = !loading, onClick = onClick) {
-        PuiIconView(
-            icon = PuiIcon.Refresh,
-            modifier = Modifier
-                .size(22.dp)
-                .graphicsLayer { rotationZ = if (loading) angle else 0f },
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
 private fun KeySummaryRow(apiKey: String, onManage: () -> Unit) {
     Row(
         Modifier

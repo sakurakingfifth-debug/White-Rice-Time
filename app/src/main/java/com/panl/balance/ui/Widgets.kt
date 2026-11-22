@@ -40,6 +40,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.graphicsLayer
+import com.panl.pui.PuiIconView
 
 /*
  * 应用层通用小件：按钮、信息行、说明文字、状态条。
@@ -359,4 +368,34 @@ fun PuiCircleIconButton(
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center
     ) { content() }
+}
+
+/**
+ * 圆形刷新按钮：正常是刷新图标，加载时自己转起来。
+ *
+ * 首页标题栏和「余额明细」页共用同一个 —— 之前明细页是个圆圈里写「刷新」两个字，
+ * 和首页那颗图标按钮不是一套。
+ */
+@Composable
+fun RefreshButton(loading: Boolean, onClick: () -> Unit) {
+    val transition = rememberInfiniteTransition(label = "refresh-spin")
+    val angle by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "refresh-angle"
+    )
+
+    PuiCircleIconButton(enabled = !loading, onClick = onClick) {
+        PuiIconView(
+            icon = PuiIcon.Refresh,
+            modifier = Modifier
+                .size(22.dp)
+                .graphicsLayer { rotationZ = if (loading) angle else 0f },
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
