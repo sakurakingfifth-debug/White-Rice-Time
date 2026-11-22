@@ -61,7 +61,6 @@ import com.panl.balance.data.DeepSeekClient
 import com.panl.balance.data.UpdateClient
 import com.panl.balance.anim.SeamlessView
 import com.panl.balance.perf.MemoryGuard
-import com.panl.balance.qs.BalanceTileService
 import com.panl.pui.PuiDivider
 import com.panl.pui.PuiGhostButton
 import com.panl.pui.PuiGroup
@@ -100,7 +99,6 @@ fun SettingsPage(
     var pendingToggle by remember { mutableStateOf(PendingToggle.None) }
     var showSeamless by remember { mutableStateOf(false) }
     var hideConfirm by remember { mutableStateOf(false) }
-    var tileHint by remember { mutableStateOf<String?>(null) }
 
     fun applyToggle(kind: PendingToggle, enabled: Boolean) {
         when (kind) {
@@ -332,33 +330,6 @@ fun SettingsPage(
             }
         }
 
-        PuiGroup("控制中心") {
-            PuiInfoRow(
-                "余额磁贴",
-                "显示余额（精确到分），点一下打开应用",
-                showDivider = false
-            )
-            Column(
-                Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    PuiGhostButton("添加到控制中心", Modifier.fillMaxWidth()) {
-                        BalanceTileService.requestAdd(context) { result -> tileHint = tileResultText(result) }
-                    }
-                }
-                Text(
-                    tileHint ?: if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        "也可以在控制中心下拉后点「编辑」手动添加。"
-                    } else {
-                        "在控制中心下拉后点「编辑」，把「余额」磁贴拖进常用区域。"
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
-                )
-            }
-        }
-
         PuiGroup("外观") {
             PuiNavRow(
                 icon = PuiIcon.Brush,
@@ -581,14 +552,7 @@ private fun VerifyLine(vm: BalanceViewModel) {
 
 private enum class PendingToggle { None, Live, Normal, Background }
 
-/** 系统「把磁贴加到控制中心」回调的文案（API 33 只有三个结果码，失败走 error 常量）。 */
-private fun tileResultText(result: Int): String = when (result) {
-    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED -> "已添加到控制中心"
-    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED -> "磁贴已经在控制中心里了"
-    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_NOT_ADDED -> "没有添加，可以下拉控制中心手动添加"
-    StatusBarManager.TILE_ADD_REQUEST_ERROR_APP_NOT_IN_FOREGROUND -> "应用不在前台，回到应用里再点一次"
-    else -> "没有添加成功（结果码 $result），可下拉控制中心手动添加"
-}
+
 
 /** 自检面板的分组标题。 */
 @Composable

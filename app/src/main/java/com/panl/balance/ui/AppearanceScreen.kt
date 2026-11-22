@@ -1,5 +1,7 @@
 package com.panl.balance.ui
 
+import android.app.StatusBarManager
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,8 +35,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.panl.balance.data.Prefs
+import com.panl.balance.qs.BalanceTileService
+import com.panl.pui.PuiGhostButton
 import com.panl.pui.PuiGroup
 import com.panl.pui.PuiIcon
 import com.panl.pui.PuiSliderRow
@@ -48,7 +53,9 @@ import com.panl.pui.PuiSwitchRow
 @Composable
 fun AppearanceScreen(onBack: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
     var showArgbDialog by remember { mutableStateOf(false) }
+    var tileHint by remember { mutableStateOf<String?>(null) }
     val custom = Appearance.accentMode == Prefs.MODE_CUSTOM
 
     Column(
@@ -199,6 +206,37 @@ fun AppearanceScreen(onBack: () -> Unit) {
                 )
             }
 
+            PuiGroup("控制中心") {
+                PuiInfoRow(
+                    "余额磁贴",
+                    "显示余额（精确到分），点一下打开应用",
+                    showDivider = false
+                )
+                Column(
+                    Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        PuiGhostButton("添加到控制中心", Modifier.fillMaxWidth()) {
+                            // 有的 ROM 收下请求却从不回调，先给一句「已发起」，别让按钮看起来没反应
+                            tileHint = "已向系统发起添加请求…"
+                            BalanceTileService.requestAdd(context) { result ->
+                                tileHint = tileResultText(result)
+                            }
+                        }
+                    }
+                    Text(
+                        tileHint ?: if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            "也可以在控制中心下拉后点「编辑」手动添加。"
+                        } else {
+                            "在控制中心下拉后点「编辑」，把「余额」磁贴拖进常用区域。"
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = scheme.onSurfaceVariant.copy(alpha = 0.75f)
+                    )
+                }
+            }
+
             Text(
                 "主题色只影响主色（按钮、开关、图标、导航栏选中态），底与卡片的中性灰阶不跟着变，" +
                     "否则深浅色下会脏。模糊关闭后顶栏是纯色渐变，不再实时采样。",
@@ -282,4 +320,13 @@ private fun ArgbDialog(initial: Int, onDismiss: () -> Unit, onApply: (Int) -> Un
             TextButton(onClick = onDismiss) { Text("取消") }
         }
     )
+}
+
+/** 系统「把磁贴加到控制中心」回调的文案（API 33 只有三个结果码，失败统一兜底）。 */
+private fun tileResultText(result: Int): String = when (result) {
+    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED -> "已添加到控制中心"
+    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED -> "磁贴已经在控制中心里了"
+    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_NOT_ADDED -> "没有添加，可以下拉控制中心手动添加"
+    StatusBarManager.TILE_ADD_REQUEST_ERROR_APP_NOT_IN_FOREGROUND -> "应用不在前台，回到应用里再点一次"
+    else -> "没有添加成功（结果码 $result），可下拉控制中心手动添加"
 }
