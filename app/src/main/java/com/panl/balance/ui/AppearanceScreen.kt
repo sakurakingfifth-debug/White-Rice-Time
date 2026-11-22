@@ -44,6 +44,10 @@ import com.panl.pui.PuiGroup
 import com.panl.pui.PuiIcon
 import com.panl.pui.PuiSliderRow
 import com.panl.pui.PuiSwitchRow
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.ui.graphics.Brush
 
 /**
  * 外观与导航栏：明暗、主题色、模糊，参考 PUI 安装器的同名页面。
@@ -58,6 +62,10 @@ fun AppearanceScreen(onBack: () -> Unit) {
     var tileHint by remember { mutableStateOf<String?>(null) }
     val custom = Appearance.accentMode == Prefs.MODE_CUSTOM
 
+    // 标题贴着状态栏，只有下面的滚动区带顶部模糊：
+    // 内容往上滚时在标题栏下沿虚化，而不是被硬切一刀
+    val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
     Column(
         Modifier
             .fillMaxSize()
@@ -67,7 +75,7 @@ fun AppearanceScreen(onBack: () -> Unit) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 16.dp, top = 6.dp),
+                .padding(start = 8.dp, end = 16.dp, top = 2.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -79,7 +87,7 @@ fun AppearanceScreen(onBack: () -> Unit) {
             ) {
                 Chevron(size = 18.dp, color = scheme.onSurface, direction = -1)
             }
-            Spacer(Modifier.width(6.dp))
+            Spacer(Modifier.width(2.dp))
             Text(
                 "外观与导航栏",
                 style = MaterialTheme.typography.headlineSmall,
@@ -87,11 +95,12 @@ fun AppearanceScreen(onBack: () -> Unit) {
             )
         }
 
+        Box(Modifier.fillMaxSize()) {
         Column(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 32.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 26.dp, bottom = 32.dp + bottomInset),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             PuiGroup("控制中心") {
@@ -238,6 +247,20 @@ fun AppearanceScreen(onBack: () -> Unit) {
 
 
 
+        }
+
+            // 顶部渐隐：内容滚到标题下方时淡出成背景色
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(26.dp)
+                    .align(Alignment.TopCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(scheme.background, scheme.background.copy(alpha = 0f))
+                        )
+                    )
+            )
         }
     }
 
