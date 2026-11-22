@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import com.panl.balance.data.Prefs
 import com.panl.pui.PuiTheme
+import androidx.compose.ui.unit.dp
 
 /**
  * 外观状态：明暗、主题色、模糊。
@@ -185,3 +186,11 @@ fun BalanceTheme(content: @Composable () -> Unit) {
     }
     PuiTheme(darkTheme = dark, dynamicAccent = false, colorScheme = scheme, content = content)
 }
+
+/**
+ * 顶部模糊带在状态栏之外额外占的高度。
+ *
+ * 主页和「外观与导航栏」共用这一个值：带子越高，标题被顶得越低、卡片顶部被虚化的部分越多。
+ * 原来 64dp 太贪，改成 32dp —— 模糊还在，但不再吃掉主卡片的上半截。
+ */
+val TopBlurExtra = 32.dp

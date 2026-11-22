@@ -69,7 +69,7 @@ fun AppearanceScreen(onBack: () -> Unit) {
     // 完全照主页（设置页）的做法：大标题跟着列表滚，顶部模糊带从屏幕顶端算起，
     // 内容滚进带子里逐渐虚化。标题用 PuiPageTitle，和「设置」同一个字号。
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val blurHeight = rememberPuiTopBlurHeight()
+    val blurHeight = rememberPuiTopBlurHeight(extra = TopBlurExtra)
     val density = LocalDensity.current
     val topBlurRadius = with(density) { Appearance.topBlurPx.toDp() }
 

@@ -42,6 +42,7 @@ import com.panl.balance.ui.AppearanceScreen
 import com.panl.balance.ui.BalanceTheme
 import com.panl.balance.ui.OtaScreen
 import com.panl.balance.ui.SettingsPage
+import com.panl.balance.ui.TopBlurExtra
 import com.panl.pui.PuiFloatingNavBar
 import com.panl.pui.PuiIcon
 import com.panl.pui.PuiTopFade
@@ -63,7 +64,7 @@ fun App(vm: BalanceViewModel = viewModel()) {
     BalanceTheme {
         val pagerState = rememberPagerState(initialPage = vm.startPage) { 2 }
         val scope = rememberCoroutineScope()
-        val blurHeight = rememberPuiTopBlurHeight()
+        val blurHeight = rememberPuiTopBlurHeight(extra = TopBlurExtra)
         val density = androidx.compose.ui.platform.LocalDensity.current
         val navBlur = with(density) { Appearance.navBlurPx.toDp() }
         val topBlur = with(density) { Appearance.topBlurPx.toDp() }
