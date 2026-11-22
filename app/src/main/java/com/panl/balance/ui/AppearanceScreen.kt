@@ -108,7 +108,7 @@ fun AppearanceScreen(onBack: () -> Unit) {
             PuiGroup("控制中心") {
                 PuiInfoRow(
                     "余额磁贴",
-                    "显示余额（精确到分），点一下打开应用",
+                    "",
                     showDivider = false
                 )
                 Column(
