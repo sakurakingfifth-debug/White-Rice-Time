@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -79,6 +80,7 @@ fun TrashScreen(onBack: () -> Unit) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     var confirmClear by remember { mutableStateOf(false) }
+    var confirmRestoreAll by remember { mutableStateOf(false) }
     var pendingPurge by remember { mutableStateOf<HistoryEntry?>(null) }
 
     Box(
@@ -97,13 +99,10 @@ fun TrashScreen(onBack: () -> Unit) {
                     }
                 )
                 .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = blurHeight + 4.dp, bottom = 32.dp + bottomInset),
+                .padding(start = 16.dp, end = 16.dp, top = blurHeight + 4.dp, bottom = 104.dp + bottomInset),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     Modifier
                         .size(36.dp)
@@ -115,15 +114,6 @@ fun TrashScreen(onBack: () -> Unit) {
                     Chevron(size = 18.dp, color = scheme.onSurface, direction = -1)
                 }
                 PuiPageTitle("回收站")
-                if (entries.isNotEmpty()) {
-                    Spacer(Modifier.weight(1f))
-                    // 一键把整站记录搬回余额记录：非破坏性操作，不需要二次确认
-                    PuiLinkButton("一键恢复", onClick = {
-                        val all = entries
-                        Trash.clear()
-                        prefs.history = (prefs.history + all).sortedByDescending { it.at }
-                    })
-                }
             }
 
             if (entries.isEmpty()) {
@@ -169,6 +159,52 @@ fun TrashScreen(onBack: () -> Unit) {
         }
 
         PuiTopFade(height = blurHeight, topAlpha = 0.5f)
+
+        // 常驻胶囊：整站一键恢复，和底部导航栏同一套悬浮语言
+        if (entries.isNotEmpty()) {
+            Surface(
+                onClick = { confirmRestoreAll = true },
+                shape = CircleShape,
+                color = scheme.primary,
+                shadowElevation = 8.dp,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 28.dp + bottomInset)
+                    .height(52.dp)
+            ) {
+                Box(
+                    Modifier.padding(horizontal = 30.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "一键恢复",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = scheme.onPrimary
+                    )
+                }
+            }
+        }
+    }
+
+    if (confirmRestoreAll) {
+        AppDialog(
+            title = "一键恢复？",
+            onDismissRequest = { confirmRestoreAll = false },
+            confirmText = "恢复",
+            onConfirm = {
+                val all = entries
+                Trash.clear()
+                prefs.history = (prefs.history + all).sortedByDescending { it.at }
+                confirmRestoreAll = false
+            }
+        ) {
+            Text(
+                "回收站里的 ${entries.size} 条记录会全部搬回「余额记录」，回收站随即清空。\n\n" +
+                    "记录本身的时间不变，回去后按时间倒序排列。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = scheme.onSurfaceVariant
+            )
+        }
     }
 
     if (confirmClear) {
