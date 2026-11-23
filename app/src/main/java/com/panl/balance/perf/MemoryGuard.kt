@@ -363,14 +363,9 @@ object MemoryGuard {
             // Android 17 的内存限制器会为每个进程单独建一层 cgroup（apps/uid_x/pid_y），
             // 老版本只有 apps/uid_x。所以「有没有 pid 这一层」是应用侧唯一能看到的启用证据。
             add("限制器" to if (path == null) "—" else if (path.contains("/pid_")) "已启用（按进程分组）" else "未见进程分组")
-            add("软上限" to limitText(dir, "memory.high"))
-            add("硬上限" to limitText(dir, "memory.max"))
-            add("交换上限" to limitText(dir, "memory.swap.max"))
-            add("上次退出" to lastExit(app))
-            add("预警监听" to if (installed) "已监听（$ACTION）" else "未监听")
-            add("预警 / 查杀" to "$trimCount / $killCount 次")
-            add("最近一次" to if (lastType == 0) lastEvent else "$lastEvent；PSS $lastPss/${lastPssLimit} KB，堆 $lastHeap/$lastHeapLimit KB")
-            add("回传结果" to if (lastCostMs >= 0) "$lastReply（${lastCostMs}ms）" else lastReply)
+            // 软/硬/交换上限读不到（SELinux 挡住 memory.* 节点），
+            // 以及预警监听、预警/查杀、最近一次、回传结果这几行都属于调试用的内部账本，
+            // 面板上留着只会让人以为哪里坏了，已经去掉。
         }
     }
 

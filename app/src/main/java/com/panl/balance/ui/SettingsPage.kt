@@ -307,7 +307,7 @@ fun SettingsPage(
                         DiagnoseRow(key, value)
                     }
                     Spacer(Modifier.height(10.dp))
-                    DiagnoseSection("内存")
+                    DiagnoseSection("公平运行内存")
                     (memoryRows ?: listOf("读取" to "…")).forEach { (key, value) ->
                         DiagnoseRow(key, value)
                     }
