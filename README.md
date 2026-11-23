@@ -857,9 +857,16 @@ window.attributes = window.attributes.apply { blurBehindRadius = 20dp.toPx() }
 （多久同步一次、要不要常驻、要不要通知）。现在合并成一行「自动刷新、后台与通知」，
 点开是整页的 `SyncScreen`，三组原样搬过去。
 
-这里**没有**用独立 Activity：这些开关直接驱动 `BalanceViewModel` 里的定时器和前台服务，
-另开 Activity 会拿到第二个 ViewModel 实例，两边各跑一份轮询、状态还会互相覆盖。
-所以它和「软件更新」一样是主页面里的整页浮层（右滑入），用的是同一个 ViewModel 实例。
+这一页和「检查更新」最初是盖在主页面上的浮层，后来都改成了独立 Activity，好让它们也走
+ColorOS 的无缝动画（设置页那一行放大成全屏）。难点在于 ViewModel：
+
+- 这些开关直接驱动 `BalanceViewModel` 里的定时器和前台服务；
+- 独立 Activity 里 `viewModel()` 会建**第二个实例**，两个实例各跑一份轮询、状态互相覆盖。
+
+解决办法是把 ViewModel 提到应用级：`PuiApp` 里挂一个 `ViewModelStore` + `ViewModelStoreOwner`
+（顺带实现 `HasDefaultViewModelProviderFactory` 以便构造 `AndroidViewModel`），
+主界面和这两个页面都通过 `sharedBalanceViewModel()` 取同一个实例。
+这样既有无缝动画，又只有一份定时器。
 
 ### 余额磁贴也在这里
 

@@ -36,12 +36,11 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.panl.balance.ui.BalancePage
+import com.panl.balance.ui.sharedBalanceViewModel
 import com.panl.balance.ui.BalanceViewModel
 import com.panl.balance.ui.Appearance
 import com.panl.balance.ui.BalanceTheme
-import com.panl.balance.ui.OtaScreen
 import com.panl.balance.ui.SettingsPage
-import com.panl.balance.ui.SyncScreen
 import com.panl.balance.ui.TopBlurExtra
 import com.panl.pui.PuiFloatingNavBar
 import com.panl.pui.PuiIcon
@@ -60,7 +59,7 @@ import kotlinx.coroutines.launch
  * 低版本自动退化成「纯色渐隐」，主题与组件本身不受影响。
  */
 @Composable
-fun App(vm: BalanceViewModel = viewModel()) {
+fun App(vm: BalanceViewModel = sharedBalanceViewModel()) {
     BalanceTheme {
         val pagerState = rememberPagerState(initialPage = vm.startPage) { 2 }
         val scope = rememberCoroutineScope()
@@ -77,10 +76,6 @@ fun App(vm: BalanceViewModel = viewModel()) {
         var resumed by remember { mutableStateOf(false) }
 
         // 「软件更新」整页盖在最上层：不销毁下面的 Pager，返回时页面与滚动位置都还在
-        var showOta by remember { mutableStateOf(false) }
-        var showSync by remember { mutableStateOf(false) }
-        BackHandler(enabled = showOta) { showOta = false }
-        BackHandler(enabled = showSync) { showSync = false }
 
         DisposableEffect(lifecycleOwner) {
             val observer = LifecycleEventObserver { _, event ->
@@ -152,8 +147,6 @@ fun App(vm: BalanceViewModel = viewModel()) {
                         vm = vm,
                         topPad = blurHeight,
                         scroll = settingsScroll,
-                        onOpenOta = { showOta = true },
-                        onOpenSync = { showSync = true }
                     )
                 }
             }
@@ -175,43 +168,6 @@ fun App(vm: BalanceViewModel = viewModel()) {
                             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                     )
             )
-
-            AnimatedVisibility(
-                visible = showOta,
-                enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
-                exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut(),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                // 吞掉空白区的点击，避免穿透到下面的 Pager
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {}
-                ) {
-                    OtaScreen(onBack = { showOta = false })
-                }
-            }
-
-            AnimatedVisibility(
-                visible = showSync,
-                enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
-                exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut(),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {}
-                ) {
-                    SyncScreen(vm = vm, onBack = { showSync = false })
-                }
-            }
 
         }
     }

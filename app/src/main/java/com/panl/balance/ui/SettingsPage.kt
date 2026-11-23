@@ -76,8 +76,6 @@ fun SettingsPage(
     vm: BalanceViewModel,
     topPad: Dp,
     scroll: ScrollState,
-    onOpenOta: () -> Unit,
-    onOpenSync: () -> Unit,
 ) {
     val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
@@ -185,13 +183,29 @@ fun SettingsPage(
         }
 
         PuiGroup("刷新与通知") {
-            PuiNavRow(
-                icon = PuiIcon.Refresh,
-                title = "自动刷新、后台与通知",
-                subtitle = "轮询间隔、后台常驻、充值更新提醒",
-                showDivider = false,
-                onClick = onOpenSync
-            )
+            val activity = context.findActivity()
+            val cardColor = MaterialTheme.colorScheme.surfaceContainerLowest.toArgb()
+            SeamlessHost(
+                onOpen = { source ->
+                    if (activity != null) {
+                        openSeamless(
+                            activity = activity,
+                            source = source,
+                            radiusPx = 20f * activity.resources.displayMetrics.density,
+                            fillColor = cardColor,
+                            target = SyncActivity::class.java
+                        )
+                    }
+                }
+            ) { open ->
+                PuiNavRow(
+                    icon = PuiIcon.Refresh,
+                    title = "自动刷新、后台与通知",
+                    subtitle = "轮询间隔、后台常驻、充值更新提醒",
+                    showDivider = false,
+                    onClick = open
+                )
+            }
         }
 
         PuiGroup("提醒") {
@@ -331,12 +345,28 @@ fun SettingsPage(
                 subtitle = "${UpdateClient.OWNER}/${UpdateClient.REPO}",
                 onClick = { openUrl(context, UpdateClient.REPO_URL) }
             )
-            PuiNavRow(
-                icon = PuiIcon.Export,
-                title = "检查更新",
-                subtitle = "查看版本、更新日志与下载",
-                onClick = onOpenOta
-            )
+            val aboutActivity = context.findActivity()
+            val aboutCardColor = MaterialTheme.colorScheme.surfaceContainerLowest.toArgb()
+            SeamlessHost(
+                onOpen = { source ->
+                    if (aboutActivity != null) {
+                        openSeamless(
+                            activity = aboutActivity,
+                            source = source,
+                            radiusPx = 20f * aboutActivity.resources.displayMetrics.density,
+                            fillColor = aboutCardColor,
+                            target = OtaActivity::class.java
+                        )
+                    }
+                }
+            ) { open ->
+                PuiNavRow(
+                    icon = PuiIcon.Export,
+                    title = "检查更新",
+                    subtitle = "查看版本、更新日志与下载",
+                    onClick = open
+                )
+            }
             PuiInfoRow("接口", "api.deepseek.com", icon = PuiIcon.Chart)
             Column(
                 Modifier.padding(16.dp),

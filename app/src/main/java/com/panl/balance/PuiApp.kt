@@ -1,6 +1,11 @@
 package com.panl.balance
 
 import android.app.Application
+import androidx.lifecycle.HasDefaultViewModelProviderFactory
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
 import com.panl.balance.data.Prefs
 import com.panl.balance.perf.MemoryGuard
 import com.panl.balance.data.Trash
@@ -18,6 +23,22 @@ import com.panl.balance.ui.Recents
  * 这里不持有任何业务对象，也不做初始化 IO —— 冷启动首帧不该被拖慢。
  */
 class PuiApp : Application() {
+
+    /**
+     * 应用级 ViewModel 宿主。
+     *
+     * 「刷新与通知」是独立 Activity，但它的开关驱动的是同一个 [BalanceViewModel]
+     * （定时器 + 前台服务）。如果各建一份，两个实例会各跑一份轮询、状态互相覆盖 ——
+     * 所以把 ViewModel 挂到 Application 上，主界面和这个页面共用同一个实例。
+     */
+    private val appViewModelStore = ViewModelStore()
+
+    val appViewModelOwner: ViewModelStoreOwner = object : ViewModelStoreOwner,
+        HasDefaultViewModelProviderFactory {
+        override val viewModelStore: ViewModelStore get() = appViewModelStore
+        override val defaultViewModelProviderFactory: ViewModelProvider.Factory
+            get() = AndroidViewModelFactory.getInstance(this@PuiApp)
+    }
 
     override fun onCreate() {
         super.onCreate()
