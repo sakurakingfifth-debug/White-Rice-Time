@@ -833,6 +833,24 @@ Phone / Split / SliderVertical / Selected），应用界面不用它们。
   一样会自动退化成普通 `startActivity`；
 - 因此它不再销毁主页面之外的任何东西 —— 主页面本来就在下面，返回也不需要恢复状态。
 
+### 弹窗背景模糊（4.16 后段）
+
+应用里的弹窗（清空确认、后台隐藏确认、回收站删除、自定义 ARGB、自检）都是独立的 `Dialog` 窗口，
+内容画在自己的 surface 上，Compose 里「模糊底层」是做不到的。做法是让系统去模糊**弹窗后面那个窗口**：
+
+```kotlin
+window.addFlags(FLAG_BLUR_BEHIND)
+window.setDimAmount(0.2f)                    // 默认那层灰太重，会把模糊压得看不出来
+window.attributes = window.attributes.apply { blurBehindRadius = 20dp.toPx() }
+```
+
+要点：
+
+- 生效的是 `LayoutParams.blurBehindRadius`（API 31+），不是 `Window.setBackgroundBlurRadius`；
+- 半径直接读 `Appearance.navBlurPx` —— 就是外观页「浮窗背景模糊」那个滑杆，和底部导航栏同一份值，
+  所以拖滑杆时已打开的弹窗也会跟着变（`LaunchedEffect(radiusDp)`）；
+- 每个弹窗里塞一个零尺寸的 `DialogWindowBlur()` 即可，正文不用改。
+
 ### 顺带：刷新 / 后台 / 通知收成一页（4.16 后段）
 
 设置页原来有「刷新」「后台」「通知」三个分组，十来个控件把第一屏撑得很长，而它们其实是一件事

@@ -278,6 +278,7 @@ private fun ArgbDialog(initial: Int, onDismiss: () -> Unit, onApply: (Int) -> Un
         title = { Text("自定义主题色") },
         text = {
             Column {
+                DialogWindowBlur()
                 Text(
                     "输入 8 位 ARGB（如 #FF4D6BFE），或省略透明度写 6 位（如 #4D6BFE）。",
                     style = MaterialTheme.typography.bodyMedium,

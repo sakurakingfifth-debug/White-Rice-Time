@@ -240,7 +240,12 @@ private fun ConfirmDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = { Text(body) },
+        text = {
+            Column {
+                DialogWindowBlur()
+                Text(body)
+            }
+        },
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text(confirmText, color = MaterialTheme.colorScheme.error)

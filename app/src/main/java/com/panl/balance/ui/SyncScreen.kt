@@ -255,6 +255,8 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
             onDismissRequest = { hideConfirm = false },
             title = { Text("开启后台隐藏？") },
             text = {
+                Column {
+                DialogWindowBlur()
                 Text(
                     "开启后，应用整体退到后台时「最近任务」里的卡片会直接消失，" +
                         "余额缩略图不会留在任务列表里，也不会被误滑掉。\n\n" +
@@ -264,6 +266,7 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
                         "已加锁或不需要加锁的话直接继续即可。",
                     style = MaterialTheme.typography.bodyMedium
                 )
+                }
             },
             confirmButton = {
                 TextButton(onClick = {

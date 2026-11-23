@@ -260,10 +260,13 @@ fun SettingsPage(
                 onDismissRequest = { confirmClear = false },
                 title = { Text("清空余额记录？") },
                 text = {
-                    Text(
-                        "这 ${vm.history.size} 条记录会被移出「余额记录」，放到回收站里暂存。\n\n" +
-                            "在回收站里可以恢复，也可以彻底删除 —— 彻底删除之后才无法恢复。"
-                    )
+                    Column {
+                        DialogWindowBlur()
+                        Text(
+                            "这 ${vm.history.size} 条记录会被移出「余额记录」，放到回收站里暂存。\n\n" +
+                                "在回收站里可以恢复，也可以彻底删除 —— 彻底删除之后才无法恢复。"
+                        )
+                    }
                 },
                 confirmButton = {
                     TextButton(onClick = {
@@ -293,6 +296,7 @@ fun SettingsPage(
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
+                        DialogWindowBlur()
                         DiagnoseSection("无缝动画")
                         SeamlessView.diagnose().forEach { (key, value) ->
                             DiagnoseRow(key, value)
