@@ -136,7 +136,7 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
 
             PuiGroup("通知") {
                 PuiSwitchRow(
-                    icon = PuiIcon.Bell,
+                    icon = PuiIcon.MessageMinus,
                     title = "实时更新",
                     subtitle = "Android 16+ 显示为状态栏实时动态，低版本为常驻通知",
                     checked = vm.liveNotification,
@@ -146,7 +146,7 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
                     showDivider = true
                 )
                 PuiSwitchRow(
-                    icon = PuiIcon.Bell,
+                    icon = PuiIcon.NotificationBadge,
                     title = "余额通知",
                     subtitle = "常驻通知，滑不走；展开可看赠送 / 充值并手动刷新",
                     checked = vm.normalNotification,

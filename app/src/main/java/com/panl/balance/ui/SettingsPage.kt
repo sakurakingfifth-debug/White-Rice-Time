@@ -196,7 +196,7 @@ fun SettingsPage(
 
         PuiGroup("提醒") {
             PuiSwitchRow(
-                icon = PuiIcon.Glow,
+                icon = PuiIcon.WalletSearch,
                 title = "低余额提醒",
                 subtitle = "余额低于阈值时在首页显示提示",
                 checked = vm.lowAlert,
@@ -311,7 +311,7 @@ fun SettingsPage(
         }
 
         PuiGroup("关于") {
-            PuiInfoRow("应用", "白饭时刻", icon = PuiIcon.Glow)
+            PuiInfoRow("应用", "白饭时刻", icon = PuiIcon.Grid)
             // 「无缝动画」那一行太技术化，已隐藏；自检面板改成**长按版本行**打开
             Box(
                 Modifier.combinedClickable(
@@ -319,7 +319,7 @@ fun SettingsPage(
                     onClick = {}
                 )
             ) {
-                PuiInfoRow("版本", versionName, icon = PuiIcon.Tag)
+                PuiInfoRow("版本", versionName, icon = PuiIcon.Flag)
             }
             PuiNavRow(
                 icon = PuiIcon.Code,
@@ -328,12 +328,12 @@ fun SettingsPage(
                 onClick = { openUrl(context, UpdateClient.REPO_URL) }
             )
             PuiNavRow(
-                icon = PuiIcon.Refresh,
+                icon = PuiIcon.Chart,
                 title = "检查更新",
                 subtitle = "查看版本、更新日志与下载",
                 onClick = onOpenOta
             )
-            PuiInfoRow("接口", "api.deepseek.com", icon = PuiIcon.Code)
+            PuiInfoRow("接口", "api.deepseek.com", icon = PuiIcon.Export)
             Column(
                 Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)

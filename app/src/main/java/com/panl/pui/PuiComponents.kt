@@ -416,6 +416,21 @@ enum class PuiIcon(val res: Int = 0) {
     /** 代码 / 仓库：左右尖括号 + 中间斜杠（`</>`），用于 GitHub 入口 */
     Code(R.drawable.ic_pui_code),
 
+    /** 消息 / 对话：浅色气泡 + 实心减号（实时更新） */
+    MessageMinus(R.drawable.ic_pui_message_minus),
+    /** 通知角标：浅色方块 + 右上有实心圆点（余额通知） */
+    NotificationBadge(R.drawable.ic_pui_notification_badge),
+    /** 应用 / 四宫格：四个实心与浅色圆角方块（应用信息） */
+    Grid(R.drawable.ic_pui_grid),
+    /** 钱包 + 放大镜：余额查询（低余额提醒） */
+    WalletSearch(R.drawable.ic_pui_wallet_search),
+    /** 旗帜（版本） */
+    Flag(R.drawable.ic_pui_flag),
+    /** 柱状图（检查更新） */
+    Chart(R.drawable.ic_pui_chart),
+    /** 导出：浅色托盘 + 实心向上箭头（接口） */
+    Export(R.drawable.ic_pui_export),
+
     /** 回收站：浅色桶身 + 实心桶盖与两道竖纹 */
     Trash,
     /** 信息：圆环 + 实心圆点与竖干 */
@@ -780,5 +795,7 @@ private fun DrawScope.drawPuiIcon(icon: PuiIcon, color: Color) {
             rr(0.34f, 0.47f, 0.66f, 0.545f, 0.038f, main)
             rr(0.34f, 0.62f, 0.56f, 0.695f, 0.038f, main)
         }
+        // res != 0 的图标走 painterResource，不会进到 Canvas 分支
+        else -> Unit
     }
 }
