@@ -6,7 +6,8 @@
 浅灰底（`#F0F1F3`）+ 纯白卡片（`#FFFFFF`）+ 20dp 圆角 + 克制字阶，强调色默认换成 DeepSeek 蓝。
 
 - 包名：`com.panl.balance`
-- 版本：`4.16`（versionCode 47）
+- 版本：`4.16`（versionCode 416）
+  - 版本规则：`versionName` 每次迭代 +0.01（4.16 → 4.17 …）；`versionCode` 由它推导 = 主版本 × 100 + 次版本（4.16 → 416），因此每次迭代 +1。`app/build.gradle` 里只改 `vName` 一行即可，两者不会对不上
 - 产物：`白饭时刻-4.16.apk`（8.5 MB，已签名可直接安装）
 - 成品包下载：[Releases · 最新版本](https://github.com/sakurakingfifth-debug/White-Rice-Time/releases/latest)
 - 编译基准：Kotlin 2.2.10 / Compose 1.10.4 / Material3 1.4.0 / AGP 9.2.1 / Gradle 9.4.1 / compileSdk 37 / minSdk 26
