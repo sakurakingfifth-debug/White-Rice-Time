@@ -138,7 +138,7 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
                 PuiSwitchRow(
                     icon = PuiIcon.MessageMinus,
                     title = "实时更新",
-                    subtitle = "Android 16+ 显示为状态栏实时动态，低版本为常驻通知",
+                    subtitle = "",
                     checked = vm.liveNotification,
                     onChange = { on ->
                         if (on) requestToggle(PendingToggle.Live) else vm.updateLiveNotification(false)
@@ -148,7 +148,7 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
                 PuiSwitchRow(
                     icon = PuiIcon.NotificationBadge,
                     title = "余额通知",
-                    subtitle = "常驻通知，滑不走；展开可看赠送 / 充值并手动刷新",
+                    subtitle = "",
                     checked = vm.normalNotification,
                     onChange = { on ->
                         if (on) requestToggle(PendingToggle.Normal) else vm.updateNormalNotification(false)
@@ -195,11 +195,7 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
                 PuiSwitchRow(
                     icon = PuiIcon.SecurityUser,
                     title = "允许一直在后台运行",
-                    subtitle = if (vm.hasKey) {
-                        "前台服务每 ${vm.intervalSec} 秒同步一次，锁屏后余额、通知与插件也保持最新"
-                    } else {
-                        "先回设置页填好 API 密钥"
-                    },
+                    subtitle = "",
                     checked = vm.backgroundRun,
                     onChange = { on ->
                         if (on) requestToggle(PendingToggle.Background) else vm.updateBackgroundRun(false)
@@ -211,7 +207,7 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
                 PuiSwitchRow(
                     icon = PuiIcon.EyeOff,
                     title = "后台隐藏",
-                    subtitle = "退到后台后不在「最近任务」保留卡片",
+                    subtitle = "",
                     checked = vm.hideFromRecents,
                     onChange = { on ->
                         // 打开前先讲清代价；关掉不需要确认，之后就不再摘卡片
