@@ -205,7 +205,8 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
                 PuiInfoRow(
                     "后台同步",
                     if (vm.backgroundRun) "运行中" else "已关闭",
-                    showDivider = false
+                    showDivider = false,
+                    icon = PuiIcon.Bolt
                 )
             }
 
@@ -233,7 +234,8 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
                 PuiInfoRow(
                     "通知权限",
                     if (permGranted) "已允许" else "未允许",
-                    showDivider = !permGranted
+                    showDivider = !permGranted,
+                    icon = PuiIcon.Bell
                 )
                 if (!permGranted) {
                     Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {

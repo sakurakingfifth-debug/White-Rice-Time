@@ -120,13 +120,14 @@ fun PuiNote(text: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** 「标题 —— 值」的只读信息行，用于设置页与关于页。 */
+/** 「标题 —— 值」的只读信息行，用于设置页与关于页；[icon] 不传就是纯文字行。 */
 @Composable
 fun PuiInfoRow(
     title: String,
     value: String,
     showDivider: Boolean = true,
     valueColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    icon: PuiIcon? = null,
 ) {
     Column {
         Row(
@@ -135,6 +136,10 @@ fun PuiInfoRow(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (icon != null) {
+                PuiRowIcon(icon)
+                Spacer(Modifier.width(14.dp))
+            }
             Text(
                 title,
                 style = MaterialTheme.typography.titleMedium,

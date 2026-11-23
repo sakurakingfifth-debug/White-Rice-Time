@@ -216,11 +216,12 @@ fun SettingsPage(
         }
 
         PuiGroup("数据") {
-            PuiInfoRow("余额记录", "${vm.history.size} 条")
+            PuiInfoRow("余额记录", "${vm.history.size} 条", icon = PuiIcon.Coin)
             PuiInfoRow(
                 "上次同步",
                 vm.snapshot?.let { Fmt.clock(it.fetchedAt) } ?: "无",
-                showDivider = true
+                showDivider = true,
+                icon = PuiIcon.Refresh
             )
             // 回收站：清空后的记录先放这里，只有进去彻底删除才真删
             val activity = context.findActivity()
@@ -239,7 +240,7 @@ fun SettingsPage(
                 }
             ) { open ->
                 PuiNavRow(
-                    icon = PuiIcon.Refresh,
+                    icon = PuiIcon.Trash,
                     title = "回收站",
                     subtitle = if (vm.trash.isEmpty()) {
                         "清空后的余额记录会先放到这里"
@@ -310,7 +311,7 @@ fun SettingsPage(
         }
 
         PuiGroup("关于") {
-            PuiInfoRow("应用", "白饭时刻")
+            PuiInfoRow("应用", "白饭时刻", icon = PuiIcon.Glow)
             // 「无缝动画」那一行太技术化，已隐藏；自检面板改成**长按版本行**打开
             Box(
                 Modifier.combinedClickable(
@@ -318,7 +319,7 @@ fun SettingsPage(
                     onClick = {}
                 )
             ) {
-                PuiInfoRow("版本", versionName)
+                PuiInfoRow("版本", versionName, icon = PuiIcon.Tag)
             }
             PuiNavRow(
                 icon = PuiIcon.Code,
@@ -332,7 +333,7 @@ fun SettingsPage(
                 subtitle = "查看版本、更新日志与下载",
                 onClick = onOpenOta
             )
-            PuiInfoRow("接口", "api.deepseek.com")
+            PuiInfoRow("接口", "api.deepseek.com", icon = PuiIcon.Code)
             Column(
                 Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)

@@ -415,6 +415,13 @@ enum class PuiIcon(val res: Int = 0) {
 
     /** 代码 / 仓库：左右尖括号 + 中间斜杠（`</>`），用于 GitHub 入口 */
     Code(R.drawable.ic_pui_code),
+
+    /** 回收站：浅色桶身 + 实心桶盖与两道竖纹 */
+    Trash,
+    /** 信息：圆环 + 实心圆点与竖干 */
+    Info,
+    /** 版本 / 标签：浅色吊牌 + 实心穿孔与两道横纹 */
+    Tag,
 }
 
 @Composable
@@ -750,6 +757,28 @@ private fun DrawScope.drawPuiIcon(icon: PuiIcon, color: Color) {
             drawLine(main, p(0.64f, 0.24f), p(0.85f, 0.50f), stroke, StrokeCap.Round)
             drawLine(main, p(0.85f, 0.50f), p(0.64f, 0.76f), stroke, StrokeCap.Round)
             drawLine(sub, p(0.575f, 0.19f), p(0.425f, 0.81f), stroke, StrokeCap.Round)
+        }
+        // 回收站：浅色桶身 + 实心桶盖、提手与两道竖纹
+        PuiIcon.Trash -> {
+            rr(0.26f, 0.34f, 0.74f, 0.86f, 0.09f, sub)
+            rr(0.16f, 0.24f, 0.84f, 0.33f, 0.045f, main)
+            rr(0.41f, 0.13f, 0.59f, 0.24f, 0.035f, main)
+            val stroke = s * 0.07f
+            drawLine(main, p(0.42f, 0.46f), p(0.42f, 0.74f), stroke, StrokeCap.Round)
+            drawLine(main, p(0.58f, 0.46f), p(0.58f, 0.74f), stroke, StrokeCap.Round)
+        }
+        // 信息：圆环 + 实心圆点与竖干
+        PuiIcon.Info -> {
+            drawCircle(main, s * 0.40f, p(0.50f, 0.50f), style = Stroke(width = s * 0.085f))
+            disc(0.50f, 0.33f, 0.052f, main)
+            drawLine(main, p(0.50f, 0.46f), p(0.50f, 0.70f), s * 0.085f, StrokeCap.Round)
+        }
+        // 版本 / 标签：浅色吊牌 + 实心穿孔与两道横纹
+        PuiIcon.Tag -> {
+            rr(0.24f, 0.14f, 0.76f, 0.86f, 0.14f, sub)
+            disc(0.50f, 0.30f, 0.062f, main)
+            rr(0.34f, 0.47f, 0.66f, 0.545f, 0.038f, main)
+            rr(0.34f, 0.62f, 0.56f, 0.695f, 0.038f, main)
         }
     }
 }

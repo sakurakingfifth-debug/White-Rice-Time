@@ -26,6 +26,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.panl.pui.PuiIcon
+import com.panl.pui.PuiRowIcon
 import com.panl.pui.PuiTheme
 
 /**
@@ -43,6 +45,7 @@ private data class EntryState(
     val trailing: String?,
     val dark: Boolean,
     val blue: Boolean,
+    val icon: PuiIcon,
 )
 
 @Composable
@@ -54,10 +57,11 @@ fun SeamlessEntryCard(
     blue: Boolean,
     onOpen: (View) -> Unit,
     modifier: Modifier = Modifier,
+    icon: PuiIcon = PuiIcon.Wallet,
 ) {
     // 内部那棵组合由这个 State 单向驱动，输入变化时只重组、不重建 ComposeView。
     val state = remember {
-        mutableStateOf(EntryState(title, subtitle, trailing, dark, blue))
+        mutableStateOf(EntryState(title, subtitle, trailing, dark, blue, icon))
     }
 
     // 4.10 去掉了 4.0 加的「返回后重建宿主 View」：它在 ON_RESUME 时销毁旧的 ComposeView，
@@ -84,7 +88,7 @@ fun SeamlessEntryCard(
             view
         },
         update = {
-            state.value = EntryState(title, subtitle, trailing, dark, blue)
+            state.value = EntryState(title, subtitle, trailing, dark, blue, icon)
         }
     )
 }
@@ -101,6 +105,8 @@ private fun EntryContent(state: EntryState, onOpen: () -> Unit) {
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        PuiRowIcon(state.icon)
+        Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(
                 state.title,
