@@ -207,14 +207,6 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
                     enabled = vm.hasKey,
                     showDivider = false
                 )
-                Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
-                    Text(
-                        "首次开启时系统会询问「要允许应用一直在后台运行吗」，选「允许」；" +
-                            "通知栏会多一条「后台同步」常驻通知，点通知上的「停止」即可关闭。",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = scheme.onSurfaceVariant.copy(alpha = 0.75f)
-                    )
-                }
                 PuiDivider(16.dp)
                 PuiSwitchRow(
                     icon = PuiIcon.EyeOff,
@@ -227,15 +219,6 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
                     },
                     showDivider = false
                 )
-                Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
-                    Text(
-                        "退到后台就把卡片摘掉，任务列表里不会留下余额缩略图，也不会被误滑掉；" +
-                            "代价是下次打开相当于重新进入（会回到上次停留的页面），" +
-                            "且 ColorOS 等机型在卡片消失后没法再给应用加锁后台，可能影响上面的「允许一直在后台运行」。",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = scheme.onSurfaceVariant.copy(alpha = 0.75f)
-                    )
-                }
                 PuiDivider(16.dp)
                 PuiInfoRow(
                     "后台同步",
