@@ -270,28 +270,22 @@ fun SettingsPage(
         }
 
         if (confirmClear) {
-            AlertDialog(
+            AppDialog(
+                title = "清空余额记录？",
                 onDismissRequest = { confirmClear = false },
-                title = { Text("清空余额记录？") },
-                text = {
-                    Column {
-                        DialogWindowBlur()
-                        Text(
-                            "这 ${vm.history.size} 条记录会被移出「余额记录」，放到回收站里暂存。\n\n" +
-                                "在回收站里可以恢复，也可以彻底删除 —— 彻底删除之后才无法恢复。"
-                        )
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        vm.clearHistory()
-                        confirmClear = false
-                    }) { Text("移入回收站") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { confirmClear = false }) { Text("取消") }
+                confirmText = "移入回收站",
+                onConfirm = {
+                    vm.clearHistory()
+                    confirmClear = false
                 }
-            )
+            ) {
+                Text(
+                    "这 ${vm.history.size} 条记录会被移出「余额记录」，放到回收站里暂存。\n\n" +
+                        "在回收站里可以恢复，也可以彻底删除 —— 彻底删除之后才无法恢复。",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         if (showSeamless) {
@@ -300,32 +294,30 @@ fun SettingsPage(
                 // Debug.getPss() 要读 smaps，几十毫秒级别，文档明确要求别放主线程
                 memoryRows = withContext(Dispatchers.IO) { MemoryGuard.diagnose(context) }
             }
-            AlertDialog(
+            AppDialog(
+                title = "自检",
                 onDismissRequest = { showSeamless = false },
-                title = { Text("自检") },
-                text = {
-                    Column(
-                        Modifier
-                            .heightIn(max = 420.dp)
-                            .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        DialogWindowBlur()
-                        DiagnoseSection("无缝动画")
-                        SeamlessView.diagnose().forEach { (key, value) ->
-                            DiagnoseRow(key, value)
-                        }
-                        Spacer(Modifier.height(10.dp))
-                        DiagnoseSection("内存")
-                        (memoryRows ?: listOf("读取" to "…")).forEach { (key, value) ->
-                            DiagnoseRow(key, value)
-                        }
+                confirmText = "关闭",
+                onConfirm = { showSeamless = false },
+                dismissText = null
+            ) {
+                Column(
+                    Modifier
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    DiagnoseSection("无缝动画")
+                    SeamlessView.diagnose().forEach { (key, value) ->
+                        DiagnoseRow(key, value)
                     }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showSeamless = false }) { Text("关闭") }
+                    Spacer(Modifier.height(10.dp))
+                    DiagnoseSection("内存")
+                    (memoryRows ?: listOf("读取" to "…")).forEach { (key, value) ->
+                        DiagnoseRow(key, value)
+                    }
                 }
-            )
+            }
         }
 
         PuiGroup("关于") {

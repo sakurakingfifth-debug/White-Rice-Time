@@ -230,33 +230,26 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
     }
 
     if (hideConfirm) {
-        AlertDialog(
+        AppDialog(
+            title = "开启后台隐藏？",
             onDismissRequest = { hideConfirm = false },
-            title = { Text("开启后台隐藏？") },
-            text = {
-                Column {
-                DialogWindowBlur()
-                Text(
-                    "开启后，应用整体退到后台时「最近任务」里的卡片会直接消失，" +
-                        "余额缩略图不会留在任务列表里，也不会被误滑掉。\n\n" +
-                        "代价：下次打开相当于重新进入（会回到上次停留的页面）；" +
-                        "部分机型（含 ColorOS）在卡片消失后没法再给应用加锁后台，" +
-                        "后台常驻可能因此更容易被系统清掉。建议先给卡片加锁再开启；" +
-                        "已加锁或不需要加锁的话直接继续即可。",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    vm.updateHideFromRecents(true)
-                    hideConfirm = false
-                }) { Text("继续") }
-            },
-            dismissButton = {
-                TextButton(onClick = { hideConfirm = false }) { Text("取消") }
+            confirmText = "继续",
+            onConfirm = {
+                vm.updateHideFromRecents(true)
+                hideConfirm = false
             }
-        )
+        ) {
+            Text(
+                "开启后，应用整体退到后台时「最近任务」里的卡片会直接消失，" +
+                    "余额缩略图不会留在任务列表里，也不会被误滑掉。\n\n" +
+                    "代价：下次打开相当于重新进入（会回到上次停留的页面）；" +
+                    "部分机型（含 ColorOS）在卡片消失后没法再给应用加锁后台，" +
+                    "后台常驻可能因此更容易被系统清掉。建议先给卡片加锁再开启；" +
+                    "已加锁或不需要加锁的话直接继续即可。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

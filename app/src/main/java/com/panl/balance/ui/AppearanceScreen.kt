@@ -273,61 +273,53 @@ private fun ArgbDialog(initial: Int, onDismiss: () -> Unit, onApply: (Int) -> Un
     val parsed = parseArgb(text)
     val scheme = MaterialTheme.colorScheme
 
-    AlertDialog(
+    AppDialog(
+        title = "自定义主题色",
         onDismissRequest = onDismiss,
-        title = { Text("自定义主题色") },
-        text = {
-            Column {
-                DialogWindowBlur()
-                Text(
-                    "输入 8 位 ARGB（如 #FF4D6BFE），或省略透明度写 6 位（如 #4D6BFE）。",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant
+        confirmText = "应用",
+        onConfirm = { parsed?.let(onApply) },
+        confirmEnabled = parsed != null
+    ) {
+        Column {
+            Text(
+                "输入 8 位 ARGB（如 #FF4D6BFE），或省略透明度写 6 位（如 #4D6BFE）。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = scheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(parsed?.let { Color(it) } ?: scheme.surfaceContainerHighest)
                 )
-                Spacer(Modifier.height(12.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier
-                            .size(28.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(parsed?.let { Color(it) } ?: scheme.surfaceContainerHighest)
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    OutlinedTextField(
-                        value = text,
-                        onValueChange = { text = it.take(9) },
-                        singleLine = true,
-                        label = { Text("ARGB") },
-                        isError = parsed == null,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Spacer(Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(0xFF4D6BFE, 0xFF6E56F8, 0xFF00A05A, 0xFFE0A106, 0xFFE2564B)
-                        .take(5)
-                        .forEach { argb ->
-                            Box(
-                                Modifier
-                                    .size(26.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(argb.toInt()))
-                                    .clickable { text = "#%08X".format(argb.toInt()) }
-                            )
-                        }
-                }
+                Spacer(Modifier.width(12.dp))
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it.take(9) },
+                    singleLine = true,
+                    label = { Text("ARGB") },
+                    isError = parsed == null,
+                    modifier = Modifier.weight(1f)
+                )
             }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = parsed != null,
-                onClick = { parsed?.let(onApply) }
-            ) { Text("应用") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(0xFF4D6BFE, 0xFF6E56F8, 0xFF00A05A, 0xFFE0A106, 0xFFE2564B)
+                    .take(5)
+                    .forEach { argb ->
+                        Box(
+                            Modifier
+                                .size(26.dp)
+                                .clip(CircleShape)
+                                .background(Color(argb.toInt()))
+                                .clickable { text = "#%08X".format(argb.toInt()) }
+                        )
+                    }
+            }
         }
-    )
+    }
 }
 
 /** 系统「把磁贴加到控制中心」回调的文案（API 33 只有三个结果码，失败统一兜底）。 */

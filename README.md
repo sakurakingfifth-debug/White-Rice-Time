@@ -833,6 +833,23 @@ Phone / Split / SliderVertical / Selected），应用界面不用它们。
   一样会自动退化成普通 `startActivity`；
 - 因此它不再销毁主页面之外的任何东西 —— 主页面本来就在下面，返回也不需要恢复状态。
 
+### 弹窗按钮改成实心色块（4.16 后段）
+
+Material3 默认的弹窗按钮是两个文字按钮，主次不分，深色底上还很轻。现在统一成
+`AppDialog` + `DialogButtons`：
+
+- 底部左右两个**等宽**圆角实心块（46dp 高、14dp 圆角），左「取消」用浅底，右确认用主题色；
+- 危险操作（回收站彻底删除）确认键用 `error` 红；
+- 只有一个动作时（自检的「关闭」）传 `dismissText = null`，确认键占满整行。
+
+`AlertDialog` 做不出这个排版：它的按钮区是右对齐的 FlowRow，`fillMaxWidth` 在里面不生效，
+两个按钮会被压成文字宽度。所以 `AppDialog` 用 `Dialog` + 自己的 `Surface` 卡片画，
+内边距（24dp）、圆角（28dp）、按钮排布全部自己控制。
+
+还有一个颜色上的坑：`surfaceContainer*` 几档在 PUI 主题里都接近纯白，压在
+`surfaceContainerLowest` 的卡片上根本看不出边界 —— 取消键的浅底改用
+`onSurface.copy(alpha = 0.08f)`，浅色/深色主题下都能看出层次。
+
 ### 弹窗背景模糊（4.16 后段）
 
 应用里的弹窗（清空确认、后台隐藏确认、回收站删除、自定义 ARGB、自检）都是独立的 `Dialog` 窗口，
