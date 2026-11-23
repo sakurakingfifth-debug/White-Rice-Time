@@ -1,5 +1,18 @@
 package com.panl.balance.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
@@ -90,46 +103,80 @@ fun AppDialog(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
-    Dialog(onDismissRequest = onDismissRequest) {
+
+    // 进出场动画：从中间轻微放大弹出（带一点弹簧回弹），关闭时先反向收一下再真正关窗。
+    // 关键是「真正的 onDismissRequest 要等动画放完再调」，否则父级状态一变窗口立刻没了，动画看不到。
+    val visibleState = remember { MutableTransitionState(false).apply { targetState = true } }
+    var pendingClose by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    fun closeWith(action: () -> Unit) {
+        if (!visibleState.targetState) return
+        pendingClose = action
+        visibleState.targetState = false
+    }
+
+    Dialog(onDismissRequest = { closeWith(onDismissRequest) }) {
         // 背景模糊必须在弹窗窗口内设置，所以放在 Dialog 的最外层
         DialogWindowBlur()
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
-            color = scheme.surfaceContainerLowest
-        ) {
-            Column(Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 16.dp)) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = scheme.onSurface
+
+        LaunchedEffect(visibleState.isIdle, visibleState.currentState) {
+            if (visibleState.isIdle && !visibleState.currentState) {
+                val action = pendingClose
+                pendingClose = null
+                action?.invoke()
+            }
+        }
+
+        AnimatedVisibility(
+            visibleState = visibleState,
+            enter = scaleIn(
+                initialScale = 0.86f,
+                animationSpec = spring(
+                    dampingRatio = 0.78f,
+                    stiffness = Spring.StiffnessMediumLow
                 )
-                Spacer(Modifier.height(12.dp))
-                // 正文自己滚，并在真正还滚得动的那一侧做渐进遮罩 —— 不留一刀切的硬边
-                val scrollState = rememberScrollState()
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = maxContentHeight)
-                        // 遮罩必须在 verticalScroll **外面**：放里面量到的是整段内容高度，
-                        // 渐变会被摊平到看不见
-                        .fadeEdges(scrollState)
-                        .verticalScroll(scrollState)
-                ) {
-                    Column(
-                        Modifier.fillMaxWidth(),
-                        content = content
+            ) + fadeIn(tween(durationMillis = 140)),
+            exit = scaleOut(targetScale = 0.92f, animationSpec = tween(durationMillis = 160)) +
+                fadeOut(tween(durationMillis = 140))
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                color = scheme.surfaceContainerLowest
+            ) {
+                Column(Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 16.dp)) {
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = scheme.onSurface
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    // 正文自己滚，并在真正还滚得动的那一侧做渐进遮罩 —— 不留一刀切的硬边
+                    val scrollState = rememberScrollState()
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = maxContentHeight)
+                            // 遮罩必须在 verticalScroll **外面**：放里面量到的是整段内容高度，
+                            // 渐变会被摊平到看不见
+                            .fadeEdges(scrollState)
+                            .verticalScroll(scrollState)
+                    ) {
+                        Column(
+                            Modifier.fillMaxWidth(),
+                            content = content
+                        )
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    DialogButtons(
+                        confirmText = confirmText,
+                        onConfirm = { closeWith(onConfirm) },
+                        dismissText = dismissText,
+                        onDismiss = { closeWith(onDismiss ?: onDismissRequest) },
+                        destructive = destructive,
+                        confirmEnabled = confirmEnabled
                     )
                 }
-                Spacer(Modifier.height(16.dp))
-                DialogButtons(
-                    confirmText = confirmText,
-                    onConfirm = onConfirm,
-                    dismissText = dismissText,
-                    onDismiss = onDismiss ?: onDismissRequest,
-                    destructive = destructive,
-                    confirmEnabled = confirmEnabled
-                )
             }
         }
     }

@@ -833,6 +833,15 @@ Phone / Split / SliderVertical / Selected），应用界面不用它们。
   一样会自动退化成普通 `startActivity`；
 - 因此它不再销毁主页面之外的任何东西 —— 主页面本来就在下面，返回也不需要恢复状态。
 
+### 弹窗的进出场动画（4.16 后段）
+
+弹窗不再是「啪」地出现：打开时从中间 0.86 倍弹出（`spring` 阻尼 0.78，带一点回弹）配 140ms 淡入，
+关闭时缩到 0.92 倍、140ms 淡出。
+
+要点是**关闭要等动画放完再真正关窗**：`Dialog` 的窗口一旦被父级状态带走，动画就没了。
+所以 `AppDialog` 内部用 `MutableTransitionState` 管显隐，按钮/返回键只把 `targetState` 置 false，
+等 `isIdle && !currentState` 时再执行挂起的动作（真正调用 `onConfirm` / `onDismissRequest`）。
+
 ### 弹窗内容的上下渐进遮罩（4.16 后段）
 
 弹窗正文放在一个固定最大高度（460dp）的滚动区里，滚到一半时原来是被**硬边裁断**——
