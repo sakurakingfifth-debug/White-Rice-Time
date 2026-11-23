@@ -41,6 +41,7 @@ import com.panl.balance.ui.Appearance
 import com.panl.balance.ui.BalanceTheme
 import com.panl.balance.ui.OtaScreen
 import com.panl.balance.ui.SettingsPage
+import com.panl.balance.ui.SyncScreen
 import com.panl.balance.ui.TopBlurExtra
 import com.panl.pui.PuiFloatingNavBar
 import com.panl.pui.PuiIcon
@@ -77,7 +78,9 @@ fun App(vm: BalanceViewModel = viewModel()) {
 
         // 「软件更新」整页盖在最上层：不销毁下面的 Pager，返回时页面与滚动位置都还在
         var showOta by remember { mutableStateOf(false) }
+        var showSync by remember { mutableStateOf(false) }
         BackHandler(enabled = showOta) { showOta = false }
+        BackHandler(enabled = showSync) { showSync = false }
 
         DisposableEffect(lifecycleOwner) {
             val observer = LifecycleEventObserver { _, event ->
@@ -149,7 +152,8 @@ fun App(vm: BalanceViewModel = viewModel()) {
                         vm = vm,
                         topPad = blurHeight,
                         scroll = settingsScroll,
-                        onOpenOta = { showOta = true }
+                        onOpenOta = { showOta = true },
+                        onOpenSync = { showSync = true }
                     )
                 }
             }
@@ -188,6 +192,24 @@ fun App(vm: BalanceViewModel = viewModel()) {
                         ) {}
                 ) {
                     OtaScreen(onBack = { showOta = false })
+                }
+            }
+
+            AnimatedVisibility(
+                visible = showSync,
+                enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
+                exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut(),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {}
+                ) {
+                    SyncScreen(vm = vm, onBack = { showSync = false })
                 }
             }
 

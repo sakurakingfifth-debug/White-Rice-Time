@@ -1,10 +1,7 @@
 package com.panl.balance.ui
 
-import android.Manifest
 import android.app.StatusBarManager
 import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -56,7 +53,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import com.panl.balance.data.DeepSeekClient
 import com.panl.balance.data.UpdateClient
 import com.panl.balance.anim.SeamlessView
@@ -81,6 +77,7 @@ fun SettingsPage(
     topPad: Dp,
     scroll: ScrollState,
     onOpenOta: () -> Unit,
+    onOpenSync: () -> Unit,
 ) {
     val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
@@ -94,45 +91,8 @@ fun SettingsPage(
         }.getOrNull().orEmpty().ifBlank { "—" }
     }
 
-    // 通知权限：开启任一通知开关时按需申请
-    var permGranted by remember { mutableStateOf(NotificationPermission.granted(context)) }
-    var pendingToggle by remember { mutableStateOf(PendingToggle.None) }
     var showSeamless by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
-    var hideConfirm by remember { mutableStateOf(false) }
-
-    fun applyToggle(kind: PendingToggle, enabled: Boolean) {
-        when (kind) {
-            PendingToggle.Live -> vm.updateLiveNotification(enabled)
-            PendingToggle.Normal -> vm.updateNormalNotification(enabled)
-            PendingToggle.Background -> vm.updateBackgroundRun(enabled)
-            PendingToggle.None -> Unit
-        }
-    }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        permGranted = granted
-        applyToggle(pendingToggle, granted)
-        pendingToggle = PendingToggle.None
-    }
-
-    fun requestToggle(kind: PendingToggle) {
-        when {
-            NotificationPermission.granted(context) -> applyToggle(kind, true)
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
-                pendingToggle = kind
-                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-            else -> applyToggle(kind, true)
-        }
-    }
-
-    // 从系统设置返回后刷新授权状态
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        permGranted = NotificationPermission.granted(context)
-    }
 
     // 从首页「填写密钥」跳过来时自动聚焦输入框（等页面切完再抢焦点）
     LaunchedEffect(vm.focusKeyField) {
@@ -197,81 +157,13 @@ fun SettingsPage(
             }
         }
 
-        PuiGroup("刷新") {
-            PuiSwitchRow(
+        PuiGroup("刷新与通知") {
+            PuiNavRow(
                 icon = PuiIcon.Refresh,
-                title = "自动刷新",
-                subtitle = "回到前台时同步，并按间隔轮询",
-                checked = vm.autoRefresh,
-                onChange = { vm.updateAutoRefresh(it) },
-                showDivider = true
-            )
-            PuiSliderRow(
-                icon = null,
-                label = "刷新间隔",
-                value = vm.intervalSec,
-                // 后台常驻也用这个间隔，所以任一开关开着就允许拖动
-                enabled = vm.autoRefresh || vm.backgroundRun,
-                min = 30,
-                max = 300,
-                suffix = "s",
-                showDivider = false
-            ) { vm.updateIntervalSec(it) }
-        }
-
-        PuiGroup("后台") {
-            PuiSwitchRow(
-                icon = PuiIcon.Bolt,
-                title = "允许一直在后台运行",
-                // 间隔直接写进副标题：和上面「刷新间隔」滑杆、下面「后台同步」状态保持同一个数字
-                subtitle = if (vm.hasKey) {
-                    "前台服务每 ${vm.intervalSec} 秒同步一次，锁屏后余额、通知与插件也保持最新"
-                } else {
-                    "先在上方填好 API 密钥"
-                },
-                checked = vm.backgroundRun,
-                onChange = { on ->
-                    if (on) requestToggle(PendingToggle.Background) else vm.updateBackgroundRun(false)
-                },
-                enabled = vm.hasKey,
-                showDivider = false
-            )
-            // 这段讲的是「系统弹窗 + 常驻通知」，属于开关本身的补充说明，紧跟在开关下面。
-            // 原来放在「后台同步」状态行之后，读起来像在解释那一行，且和间隔对不上。
-            Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
-                Text(
-                    "首次开启时系统会询问「要允许应用一直在后台运行吗」，选「允许」；" +
-                        "通知栏会多一条「后台同步」常驻通知，点通知上的「停止」即可关闭。",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
-                )
-            }
-            PuiDivider(16.dp)
-            PuiSwitchRow(
-                icon = PuiIcon.EyeOff,
-                title = "后台隐藏",
-                subtitle = "退到后台后不在「最近任务」保留卡片",
-                checked = vm.hideFromRecents,
-                onChange = { on ->
-                    // 打开前先讲清代价；关掉不需要确认，之后就不再摘卡片
-                    if (on) hideConfirm = true else vm.updateHideFromRecents(false)
-                },
-                showDivider = false
-            )
-            Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
-                Text(
-                    "退到后台就把卡片摘掉，任务列表里不会留下余额缩略图，也不会被误滑掉；" +
-                        "代价是下次打开相当于重新进入（会回到上次停留的页面），" +
-                        "且 ColorOS 等机型在卡片消失后没法再给应用加锁后台，可能影响上面的「允许一直在后台运行」。",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
-                )
-            }
-            PuiDivider(16.dp)
-            PuiInfoRow(
-                "后台同步",
-                if (vm.backgroundRun) "运行中" else "已关闭",
-                showDivider = false
+                title = "自动刷新、后台与通知",
+                subtitle = "轮询间隔、后台常驻、充值更新提醒",
+                showDivider = false,
+                onClick = onOpenSync
             )
         }
 
@@ -294,41 +186,6 @@ fun SettingsPage(
                 suffix = "元",
                 showDivider = false
             ) { vm.updateThreshold(it) }
-        }
-
-        PuiGroup("通知") {
-            PuiSwitchRow(
-                icon = PuiIcon.Bell,
-                title = "实时更新",
-                subtitle = "Android 16+ 显示为状态栏实时动态，低版本为常驻通知",
-                checked = vm.liveNotification,
-                onChange = { on ->
-                    if (on) requestToggle(PendingToggle.Live) else vm.updateLiveNotification(false)
-                },
-                showDivider = true
-            )
-            PuiSwitchRow(
-                icon = PuiIcon.Bell,
-                title = "余额通知",
-                subtitle = "常驻通知，滑不走；展开可看赠送 / 充值并手动刷新",
-                checked = vm.normalNotification,
-                onChange = { on ->
-                    if (on) requestToggle(PendingToggle.Normal) else vm.updateNormalNotification(false)
-                },
-                showDivider = true
-            )
-            PuiInfoRow(
-                "通知权限",
-                if (permGranted) "已允许" else "未允许",
-                showDivider = !permGranted
-            )
-            if (!permGranted) {
-                Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
-                    PuiGhostButton("去系统设置开启", Modifier.fillMaxWidth()) {
-                        openNotificationSettings(context)
-                    }
-                }
-            }
         }
 
         PuiGroup("外观") {
@@ -448,33 +305,6 @@ fun SettingsPage(
                 },
                 confirmButton = {
                     TextButton(onClick = { showSeamless = false }) { Text("关闭") }
-                }
-            )
-        }
-
-        if (hideConfirm) {
-            AlertDialog(
-                onDismissRequest = { hideConfirm = false },
-                title = { Text("开启后台隐藏？") },
-                text = {
-                    Text(
-                        "开启后，应用整体退到后台时「最近任务」里的卡片会直接消失，" +
-                            "余额缩略图不会留在任务列表里，也不会被误滑掉。\n\n" +
-                            "代价：下次打开相当于重新进入（会回到上次停留的页面）；" +
-                            "部分机型（含 ColorOS）在卡片消失后没法再给应用加锁后台，" +
-                            "后台常驻可能因此更容易被系统清掉。建议先给卡片加锁再开启；" +
-                            "已加锁或不需要加锁的话直接继续即可。",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        vm.updateHideFromRecents(true)
-                        hideConfirm = false
-                    }) { Text("继续") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { hideConfirm = false }) { Text("取消") }
                 }
             )
         }
@@ -617,7 +447,6 @@ private fun VerifyLine(vm: BalanceViewModel) {
     )
 }
 
-private enum class PendingToggle { None, Live, Normal, Background }
 
 
 
