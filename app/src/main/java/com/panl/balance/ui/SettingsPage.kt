@@ -336,14 +336,17 @@ fun SettingsPage(
             PuiInfoRow("接口", "api.deepseek.com", icon = PuiIcon.Code)
             Column(
                 Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     "没有自建服务器，也没有统计上报。余额数据只在你刷新时从 DeepSeek 官方接口拉取。",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                PuiLinkButton("打开用量后台", { openUrl(context, DeepSeekClient.KEYS_URL) })
+                // 和「清空余额记录」同一个样式：整宽次级按钮，不再是行内文字链
+                PuiGhostButton("打开用量后台", Modifier.fillMaxWidth()) {
+                    openUrl(context, DeepSeekClient.KEYS_URL)
+                }
             }
         }
     }
