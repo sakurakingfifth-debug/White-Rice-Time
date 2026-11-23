@@ -926,6 +926,24 @@ ColorOS 的无缝动画（设置页那一行放大成全屏）。难点在于 Vi
 主界面和这两个页面都通过 `sharedBalanceViewModel()` 取同一个实例。
 这样既有无缝动画，又只有一份定时器。
 
+### 发版到 GitHub（4.17）
+
+1. 改 `app/build.gradle` 的 `vName`（例如 `'4.18'`）
+2. `./gradlew assembleRelease` —— 产物自动命名并复制到仓库根目录
+3. 推代码：`git -c http.proxy= -c https.proxy= push origin main`
+4. 建 Release 并传包（REST API）：
+
+```bash
+TOK=$(printf "protocol=https\nhost=github.com\n\n" | git credential fill | sed -n 's/^password=//p')
+curl --noproxy '*' -X POST https://api.github.com/repos/{owner}/{repo}/releases \
+  -H "Authorization: Bearer $TOK" -H "Content-Type: application/json" --data @rel.json
+curl --noproxy '*' -X POST "https://uploads.github.com/repos/{owner}/{repo}/releases/{id}/assets?name=PuiBalance-4.18.apk" \
+  -H "Authorization: Bearer $TOK" -H "Content-Type: application/vnd.android.package-archive" --data-binary @白饭时刻-4.18.apk
+```
+
+**注意代理**：本机环境变量里有 `http_proxy=http://127.0.0.1:65122`，访问 github.com 会返回
+`CONNECT tunnel failed, response 502`。git 和 curl 都必须显式绕过（`-c http.proxy=` / `--noproxy '*'`）才通。
+
 ### APK 产物命名（4.17）
 
 构建产物固定叫 `白饭时刻-<versionName>.apk`，发版不用手动改名：`app/build.gradle` 顶部的
