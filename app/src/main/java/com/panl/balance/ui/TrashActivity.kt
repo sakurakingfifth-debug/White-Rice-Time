@@ -36,6 +36,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -160,28 +163,42 @@ fun TrashScreen(onBack: () -> Unit) {
 
         PuiTopFade(height = blurHeight, topAlpha = 0.5f)
 
-        // 常驻胶囊：整站一键恢复，和底部导航栏同一套悬浮语言
+        // 常驻胶囊：整站一键恢复。
+        // 尺寸与配色参照「小布指令」详情页底部那颗按钮：占满内容宽度、56dp 高、两端全圆角，
+        // 底色是主题色压到 62% 叠在白卡上（实测 iOS 截图取色 #7FA37F，正好是 primary 60% 左右），
+        // 文字纯白加粗。这样既贴近参考样式，又跟着主题色走。
         if (entries.isNotEmpty()) {
-            Surface(
-                onClick = { confirmRestoreAll = true },
-                shape = CircleShape,
-                color = scheme.primary,
-                shadowElevation = 8.dp,
-                modifier = Modifier
+            // 底部渐隐：列表继续往下滚时从后面淡出，胶囊才不会透出底下的文字
+            Box(
+                Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 28.dp + bottomInset)
-                    .height(52.dp)
-            ) {
-                Box(
-                    Modifier.padding(horizontal = 30.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "一键恢复",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = scheme.onPrimary
+                    .fillMaxWidth()
+                    .height(170.dp + bottomInset)
+                    .background(
+                        Brush.verticalGradient(
+                            0f to Color.Transparent,
+                            // 到胶囊所在的区域就必须完全不透，否则半透明的胶囊会透出底下的记录
+                            0.62f to scheme.background,
+                            1f to scheme.background
+                        )
                     )
-                }
+            )
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 26.dp + bottomInset)
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(CircleShape)
+                    .background(scheme.primary.copy(alpha = 0.62f))
+                    .clickable { confirmRestoreAll = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "一键恢复",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.White
+                )
             }
         }
     }
