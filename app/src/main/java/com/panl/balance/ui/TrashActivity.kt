@@ -39,6 +39,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.launch
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.unit.sp
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -84,6 +99,7 @@ fun TrashScreen(onBack: () -> Unit) {
 
     var confirmClear by remember { mutableStateOf(false) }
     var confirmRestoreAll by remember { mutableStateOf(false) }
+    val pageScroll = rememberScrollState()
     var pendingPurge by remember { mutableStateOf<HistoryEntry?>(null) }
 
     Box(
@@ -101,7 +117,7 @@ fun TrashScreen(onBack: () -> Unit) {
                         Modifier
                     }
                 )
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(pageScroll)
                 .padding(start = 16.dp, end = 16.dp, top = blurHeight + 4.dp, bottom = 104.dp + bottomInset),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
@@ -163,10 +179,7 @@ fun TrashScreen(onBack: () -> Unit) {
 
         PuiTopFade(height = blurHeight, topAlpha = 0.5f)
 
-        // 常驻胶囊：整站一键恢复。
-        // 尺寸与配色参照「小布指令」详情页底部那颗按钮：占满内容宽度、56dp 高、两端全圆角，
-        // 底色是主题色压到 62% 叠在白卡上（实测 iOS 截图取色 #7FA37F，正好是 primary 60% 左右），
-        // 文字纯白加粗。这样既贴近参考样式，又跟着主题色走。
+        // 常驻胶囊：整站一键恢复
         if (entries.isNotEmpty()) {
             // 底部渐隐：列表继续往下滚时从后面淡出，胶囊才不会透出底下的文字
             Box(
@@ -183,21 +196,21 @@ fun TrashScreen(onBack: () -> Unit) {
                         )
                     )
             )
-            Box(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(start = 16.dp, end = 16.dp, bottom = 26.dp + bottomInset)
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .clip(CircleShape)
-                    .background(scheme.primary.copy(alpha = 0.62f))
-                    .clickable { confirmRestoreAll = true },
-                contentAlignment = Alignment.Center
+            // 滚动时收起，停下来再回来（参考那颗按钮在列表滚动时不会一直压在内容上）
+            AnimatedVisibility(
+                visible = !pageScroll.isScrollInProgress,
+                enter = fadeIn(tween(160)) + slideInVertically(tween(200)) { it / 2 },
+                exit = fadeOut(tween(120)) + slideOutVertically(tween(160)) { it / 2 },
+                modifier = Modifier.align(Alignment.BottomCenter)
             ) {
-                Text(
-                    "一键恢复",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = Color.White
+                RestoreAllPill(
+                    text = "一键恢复",
+                    modifier = Modifier.padding(
+                        start = 40.dp,
+                        end = 40.dp,
+                        bottom = 28.dp + bottomInset
+                    ),
+                    onClick = { confirmRestoreAll = true }
                 )
             }
         }
@@ -307,6 +320,90 @@ private fun ConfirmDialog(
             body,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/**
+ * 底部胶囊按钮，样式对齐「小布指令」详情页那颗「添加至自动指令」：
+ *
+ * - **不透明**：底色是 primary 与页面底色按 62% 混出来的实色。之前直接用半透明 primary，
+ *   列表滚到下面时会从按钮里透出来，看着像残影。
+ * - **按压涟漪**：参考视频里按下时是一圈柔和的白色圆晕缓慢扩散（约 600ms）再淡出，
+ *   不是 Material 那种一下就没的 ripple。这里自己用 `Animatable` 画一圈径向扩散的白色圆。
+ */
+@Composable
+private fun RestoreAllPill(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scheme = MaterialTheme.colorScheme
+    // 62% 主题色压白底 ≈ 参考色 #7FA37F；但主题色本身偏灰，混出来会发闷，
+    // 所以再把彩度往外推一点（远离同亮度的灰），视觉上才是参考那种「鲜一点的莫兰迪绿」
+    val base = lerp(scheme.background, scheme.primary, 0.62f)
+    // 注意：Color 的 lerp 会把 fraction 截断到 0..1，想「外推」提高彩度必须自己算
+    val gray = (base.red + base.green + base.blue) / 3f
+    fun boost(c: Float) = (gray + (c - gray) * 1.5f).coerceIn(0f, 1f)
+    val fill = Color(boost(base.red), boost(base.green), boost(base.blue))
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    // 扩散（radius）和亮度（alpha）分开：按住时圆晕一直在，松手才淡掉
+    val spread = remember { Animatable(0f) }
+    val glow = remember { Animatable(0f) }
+
+    LaunchedEffect(pressed) {
+        if (pressed) {
+            spread.snapTo(0f)
+            glow.snapTo(0f)
+            launch { glow.animateTo(1f, tween(durationMillis = 130)) }
+            launch { spread.animateTo(1f, tween(durationMillis = 620, easing = LinearOutSlowInEasing)) }
+        } else {
+            glow.animateTo(0f, tween(durationMillis = 280))
+        }
+    }
+
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clip(CircleShape)
+            .background(fill)
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                onClick = onClick
+            )
+            .drawWithContent {
+                drawContent()
+                val a = glow.value
+                if (a > 0f) {
+                    // 用径向渐变做「柔光」：中心稍亮、边缘化开，比实心白圆更像参考里那层雾状的光
+                    val r = size.height * 0.40f + size.width * 0.62f * spread.value
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.42f * a),
+                                Color.White.copy(alpha = 0.16f * a),
+                                Color.White.copy(alpha = 0f)
+                            ),
+                            center = center,
+                            radius = r
+                        ),
+                        radius = r,
+                        center = center
+                    )
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 17.sp
+            ),
+            color = Color.White
         )
     }
 }
