@@ -431,6 +431,13 @@ enum class PuiIcon(val res: Int = 0) {
     /** 导出：浅色托盘 + 实心向上箭头（接口） */
     Export(R.drawable.ic_pui_export),
 
+    /** 盾牌 + 用户（允许一直在后台运行） */
+    SecurityUser(R.drawable.ic_pui_security_user),
+    /** 盾牌（后台同步） */
+    Shield(R.drawable.ic_pui_shield),
+    /** 循环箭头（自动刷新） */
+    Repeat(R.drawable.ic_pui_repeat),
+
     /** 回收站：浅色桶身 + 实心桶盖与两道竖纹 */
     Trash,
     /** 信息：圆环 + 实心圆点与竖干 */

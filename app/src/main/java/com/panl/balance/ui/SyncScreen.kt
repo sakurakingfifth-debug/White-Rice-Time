@@ -171,7 +171,7 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
             }
             PuiGroup("刷新") {
                 PuiSwitchRow(
-                    icon = PuiIcon.Refresh,
+                    icon = PuiIcon.Repeat,
                     title = "自动刷新",
                     subtitle = "回到前台时同步，并按间隔轮询",
                     checked = vm.autoRefresh,
@@ -193,7 +193,7 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
 
             PuiGroup("后台") {
                 PuiSwitchRow(
-                    icon = PuiIcon.Bolt,
+                    icon = PuiIcon.SecurityUser,
                     title = "允许一直在后台运行",
                     subtitle = if (vm.hasKey) {
                         "前台服务每 ${vm.intervalSec} 秒同步一次，锁屏后余额、通知与插件也保持最新"
@@ -241,7 +241,7 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
                     "后台同步",
                     if (vm.backgroundRun) "运行中" else "已关闭",
                     showDivider = false,
-                    icon = PuiIcon.Bolt
+                    icon = PuiIcon.Shield
                 )
             }
 
