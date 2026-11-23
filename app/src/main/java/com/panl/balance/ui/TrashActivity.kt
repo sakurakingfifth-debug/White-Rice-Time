@@ -100,7 +100,10 @@ fun TrashScreen(onBack: () -> Unit) {
                 .padding(start = 16.dp, end = 16.dp, top = blurHeight + 4.dp, bottom = 32.dp + bottomInset),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Box(
                     Modifier
                         .size(36.dp)
@@ -112,6 +115,15 @@ fun TrashScreen(onBack: () -> Unit) {
                     Chevron(size = 18.dp, color = scheme.onSurface, direction = -1)
                 }
                 PuiPageTitle("回收站")
+                if (entries.isNotEmpty()) {
+                    Spacer(Modifier.weight(1f))
+                    // 一键把整站记录搬回余额记录：非破坏性操作，不需要二次确认
+                    PuiLinkButton("一键恢复", onClick = {
+                        val all = entries
+                        Trash.clear()
+                        prefs.history = (prefs.history + all).sortedByDescending { it.at }
+                    })
+                }
             }
 
             if (entries.isEmpty()) {
@@ -154,12 +166,6 @@ fun TrashScreen(onBack: () -> Unit) {
                 PuiGhostButton("清空回收站", Modifier.fillMaxWidth()) { confirmClear = true }
             }
 
-            Text(
-                "彻底删除之后无法恢复；只想留着看的话，可以点「恢复」把记录搬回余额记录。",
-                style = MaterialTheme.typography.bodyMedium,
-                color = scheme.onSurfaceVariant.copy(alpha = 0.75f),
-                modifier = Modifier.padding(horizontal = 4.dp)
-            )
         }
 
         PuiTopFade(height = blurHeight, topAlpha = 0.5f)
