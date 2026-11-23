@@ -328,12 +328,12 @@ fun SettingsPage(
                 onClick = { openUrl(context, UpdateClient.REPO_URL) }
             )
             PuiNavRow(
-                icon = PuiIcon.Chart,
+                icon = PuiIcon.Export,
                 title = "检查更新",
                 subtitle = "查看版本、更新日志与下载",
                 onClick = onOpenOta
             )
-            PuiInfoRow("接口", "api.deepseek.com", icon = PuiIcon.Export)
+            PuiInfoRow("接口", "api.deepseek.com", icon = PuiIcon.Chart)
             Column(
                 Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
