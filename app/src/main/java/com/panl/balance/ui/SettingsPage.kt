@@ -301,12 +301,7 @@ fun SettingsPage(
                 onConfirm = { showSeamless = false },
                 dismissText = null
             ) {
-                Column(
-                    Modifier
-                        .heightIn(max = 420.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     DiagnoseSection("无缝动画")
                     SeamlessView.diagnose().forEach { (key, value) ->
                         DiagnoseRow(key, value)

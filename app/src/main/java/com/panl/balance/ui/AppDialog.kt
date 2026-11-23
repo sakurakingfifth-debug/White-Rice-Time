@@ -1,5 +1,16 @@
 package com.panl.balance.ui
 
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -75,6 +86,7 @@ fun AppDialog(
     destructive: Boolean = false,
     confirmEnabled: Boolean = true,
     onDismiss: (() -> Unit)? = null,
+    maxContentHeight: Dp = 460.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -93,7 +105,22 @@ fun AppDialog(
                     color = scheme.onSurface
                 )
                 Spacer(Modifier.height(12.dp))
-                content()
+                // 正文自己滚，并在真正还滚得动的那一侧做渐进遮罩 —— 不留一刀切的硬边
+                val scrollState = rememberScrollState()
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = maxContentHeight)
+                        // 遮罩必须在 verticalScroll **外面**：放里面量到的是整段内容高度，
+                        // 渐变会被摊平到看不见
+                        .fadeEdges(scrollState)
+                        .verticalScroll(scrollState)
+                ) {
+                    Column(
+                        Modifier.fillMaxWidth(),
+                        content = content
+                    )
+                }
                 Spacer(Modifier.height(16.dp))
                 DialogButtons(
                     confirmText = confirmText,
@@ -174,3 +201,30 @@ fun DialogButtons(
         }
     }
 }
+
+/**
+ * 上下边缘渐进遮罩：只在**还能滚**的那一侧淡出，滚到头的那一侧就是实边。
+ *
+ * 用 [BlendMode.DstIn] 拿一张竖向渐变当 alpha 蒙版；因为要按蒙版裁剪自己的绘制内容，
+ * 得先 `CompositingStrategy.Offscreen` 把内容单独渲染到一层，否则会盖住弹窗外的像素。
+ */
+fun Modifier.fadeEdges(scroll: ScrollState, fade: Dp = 20.dp): Modifier = this
+    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        val px = fade.toPx()
+        val h = size.height
+        if (h <= px * 2) return@drawWithContent
+        val topAlpha = if (scroll.canScrollBackward) 0f else 1f
+        val bottomAlpha = if (scroll.canScrollForward) 0f else 1f
+        if (topAlpha == 1f && bottomAlpha == 1f) return@drawWithContent
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color.Black.copy(alpha = topAlpha),
+                px / h to Color.Black,
+                (h - px) / h to Color.Black,
+                1f to Color.Black.copy(alpha = bottomAlpha)
+            ),
+            blendMode = BlendMode.DstIn
+        )
+    }

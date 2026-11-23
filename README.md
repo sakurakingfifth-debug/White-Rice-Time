@@ -833,6 +833,18 @@ Phone / Split / SliderVertical / Selected），应用界面不用它们。
   一样会自动退化成普通 `startActivity`；
 - 因此它不再销毁主页面之外的任何东西 —— 主页面本来就在下面，返回也不需要恢复状态。
 
+### 弹窗内容的上下渐进遮罩（4.16 后段）
+
+弹窗正文放在一个固定最大高度（460dp）的滚动区里，滚到一半时原来是被**硬边裁断**——
+半行字直接切掉。现在两侧加了渐进遮罩：还能往下滚的一侧淡出，已经滚到头的那一侧保持实边。
+
+实现是 `Modifier.fadeEdges(scrollState)`：先 `CompositingStrategy.Offscreen` 把内容画到一层，
+再用一张竖向渐变以 `BlendMode.DstIn` 当 alpha 蒙版。两个状态位决定两端透明度：
+`scrollState.canScrollBackward` / `canScrollForward`；两端都滚不动（内容没超）时整块不画。
+
+一个顺序上的坑：遮罩必须挂在 `verticalScroll()` **外面**。挂在里面量到的是整段内容的高度，
+渐变会被摊平到几乎看不见 —— 第一版就是这么错的，滚动后顶部完全没有淡出。
+
 ### 弹窗按钮改成实心色块（4.16 后段）
 
 Material3 默认的弹窗按钮是两个文字按钮，主次不分，深色底上还很轻。现在统一成
