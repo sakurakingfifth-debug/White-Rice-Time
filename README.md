@@ -926,6 +926,18 @@ ColorOS 的无缝动画（设置页那一行放大成全屏）。难点在于 Vi
 主界面和这两个页面都通过 `sharedBalanceViewModel()` 取同一个实例。
 这样既有无缝动画，又只有一份定时器。
 
+### APK 产物命名（4.16 后段）
+
+构建产物固定叫 `白饭时刻-<versionName>.apk`，发版不用手动改名：`app/build.gradle` 顶部的
+`vName` 一改，`versionName`、`versionCode`、产物名三处同时跟上。
+
+AGP 9 抹掉了老写法 `applicationVariants.all { output.outputFileName = ... }`（`applicationVariants`
+这个属性直接没了），所以改成 `assembleRelease` 之后跑一个 `nameReleaseApk` 任务：
+把 `app-release.apk` 改名，并复制一份到仓库根目录。
+
+还有一个坑：AGP 9 里 `assembleRelease` 是**延迟注册**的，配置阶段 `tasks.named('assembleRelease')`
+会报「Task not found」，得用 `tasks.configureEach { if (it.name == 'assembleRelease') it.finalizedBy ... }`。
+
 ### 余额磁贴也在这里
 
 原来设置页里的「控制中心」分组（余额磁贴说明 + 添加到控制中心按钮）整体搬进了本页底部 ——

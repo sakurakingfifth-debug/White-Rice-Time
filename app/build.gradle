@@ -1,6 +1,9 @@
 apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
+// 版本名：发版只改这一行，versionName / versionCode / APK 文件名都跟着变
+def vName = '4.16'
+
 android {
     namespace = 'com.panl.balance'
     compileSdk = 37
@@ -12,8 +15,7 @@ android {
         // 版本规则（每次迭代）：
         //   versionName  +0.01  —— 4.16 → 4.17 → 4.18 …
         //   versionCode  +1     —— 由 versionName 推导：主版本 × 100 + 次版本，4.16 即 416
-        // 改版本只动下面这一行 vName，versionCode 会自动跟上，避免两者对不上。
-        def vName = '4.16'
+        // 改版本只动文件顶部那一行 vName，versionCode 与 APK 文件名都会跟上。
         def vParts = vName.split('\\.')
         versionName = vName
         versionCode = (vParts[0] as int) * 100 + (vParts[1] as int)
@@ -88,4 +90,38 @@ dependencies {
         exclude group: 'androidx.activity', module: 'activity-compose'
     }
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
+}
+
+// ---------------------------------------------------------------------------
+// 产物命名：白饭时刻-<versionName>.apk
+//
+// AGP 9 移除了 applicationVariants，没法再在 DSL 里直接改 outputFileName；
+// 这里在 assembleRelease 之后把 app-release.apk 改名，并同步一份到仓库根目录，
+// 发版时直接拿根目录那个包就行，不用手动重命名。
+// ---------------------------------------------------------------------------
+tasks.register('nameReleaseApk') {
+    doLast {
+        def dir = layout.buildDirectory.dir('outputs/apk/release').get().asFile
+        def src = new File(dir, 'app-release.apk')
+        if (!src.exists()) {
+            logger.lifecycle("nameReleaseApk: 没有找到 app-release.apk，跳过")
+            return
+        }
+        def target = new File(dir, "白饭时刻-${vName}.apk")
+        if (target.exists() && !target.delete()) {
+            throw new GradleException("旧的 ${target.name} 删不掉，可能被占用")
+        }
+        if (!src.renameTo(target)) {
+            throw new GradleException("改名为 ${target.name} 失败")
+        }
+        def dist = new File(rootProject.projectDir, "白饭时刻-${vName}.apk")
+        dist.bytes = target.bytes
+        logger.lifecycle("APK -> ${target.absolutePath}")
+        logger.lifecycle("APK -> ${dist.absolutePath}")
+    }
+}
+
+// AGP 9 里 assembleRelease 是延迟注册的，配置阶段 tasks.named 拿不到，用 configureEach 挂
+tasks.configureEach { t ->
+    if (t.name == 'assembleRelease') t.finalizedBy 'nameReleaseApk'
 }
