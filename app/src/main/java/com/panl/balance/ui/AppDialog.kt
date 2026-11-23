@@ -130,14 +130,14 @@ fun AppDialog(
         AnimatedVisibility(
             visibleState = visibleState,
             enter = scaleIn(
-                initialScale = 0.86f,
+                initialScale = 0.88f,
                 animationSpec = spring(
-                    dampingRatio = 0.78f,
-                    stiffness = Spring.StiffnessMediumLow
+                    dampingRatio = 0.80f,
+                    stiffness = Spring.StiffnessLow
                 )
-            ) + fadeIn(tween(durationMillis = 140)),
-            exit = scaleOut(targetScale = 0.92f, animationSpec = tween(durationMillis = 160)) +
-                fadeOut(tween(durationMillis = 140))
+            ) + fadeIn(tween(durationMillis = 150)),
+            exit = scaleOut(targetScale = 0.88f, animationSpec = tween(durationMillis = 240)) +
+                fadeOut(tween(durationMillis = 200))
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
