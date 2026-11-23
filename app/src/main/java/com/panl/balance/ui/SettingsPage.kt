@@ -157,6 +157,33 @@ fun SettingsPage(
             }
         }
 
+        PuiGroup("外观") {
+            // 这一行是 ColorOS 无缝动画的源 View：点下去像「余额明细」那样放大成整页
+            val activity = context.findActivity()
+            val rowCardColor = MaterialTheme.colorScheme.surfaceContainerLowest.toArgb()
+            SeamlessHost(
+                onOpen = { source ->
+                    if (activity != null) {
+                        val radiusPx = 20f * activity.resources.displayMetrics.density
+                        openAppearanceSeamless(
+                            activity = activity,
+                            source = source,
+                            radiusPx = radiusPx,
+                            fillColor = rowCardColor
+                        )
+                    }
+                }
+            ) { open ->
+                PuiNavRow(
+                    icon = PuiIcon.Brush,
+                    title = "外观与导航栏",
+                    subtitle = "主题、主题色、模糊",
+                    showDivider = false,
+                    onClick = open
+                )
+            }
+        }
+
         PuiGroup("刷新与通知") {
             PuiNavRow(
                 icon = PuiIcon.Refresh,
@@ -186,33 +213,6 @@ fun SettingsPage(
                 suffix = "元",
                 showDivider = false
             ) { vm.updateThreshold(it) }
-        }
-
-        PuiGroup("外观") {
-            // 这一行是 ColorOS 无缝动画的源 View：点下去像「余额明细」那样放大成整页
-            val activity = context.findActivity()
-            val rowCardColor = MaterialTheme.colorScheme.surfaceContainerLowest.toArgb()
-            SeamlessHost(
-                onOpen = { source ->
-                    if (activity != null) {
-                        val radiusPx = 20f * activity.resources.displayMetrics.density
-                        openAppearanceSeamless(
-                            activity = activity,
-                            source = source,
-                            radiusPx = radiusPx,
-                            fillColor = rowCardColor
-                        )
-                    }
-                }
-            ) { open ->
-                PuiNavRow(
-                    icon = PuiIcon.Brush,
-                    title = "外观与导航栏",
-                    subtitle = "主题、主题色、模糊",
-                    showDivider = false,
-                    onClick = open
-                )
-            }
         }
 
         PuiGroup("数据") {
