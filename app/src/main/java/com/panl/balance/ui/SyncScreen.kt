@@ -134,6 +134,41 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
                 PuiPageTitle("刷新与通知")
             }
 
+            PuiGroup("通知") {
+                PuiSwitchRow(
+                    icon = PuiIcon.Bell,
+                    title = "实时更新",
+                    subtitle = "Android 16+ 显示为状态栏实时动态，低版本为常驻通知",
+                    checked = vm.liveNotification,
+                    onChange = { on ->
+                        if (on) requestToggle(PendingToggle.Live) else vm.updateLiveNotification(false)
+                    },
+                    showDivider = true
+                )
+                PuiSwitchRow(
+                    icon = PuiIcon.Bell,
+                    title = "余额通知",
+                    subtitle = "常驻通知，滑不走；展开可看赠送 / 充值并手动刷新",
+                    checked = vm.normalNotification,
+                    onChange = { on ->
+                        if (on) requestToggle(PendingToggle.Normal) else vm.updateNormalNotification(false)
+                    },
+                    showDivider = true
+                )
+                PuiInfoRow(
+                    "通知权限",
+                    if (permGranted) "已允许" else "未允许",
+                    showDivider = !permGranted,
+                    icon = PuiIcon.Bell
+                )
+                if (!permGranted) {
+                    Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+                        PuiGhostButton("去系统设置开启", Modifier.fillMaxWidth()) {
+                            openNotificationSettings(context)
+                        }
+                    }
+                }
+            }
             PuiGroup("刷新") {
                 PuiSwitchRow(
                     icon = PuiIcon.Refresh,
@@ -210,41 +245,6 @@ fun SyncScreen(vm: BalanceViewModel, onBack: () -> Unit) {
                 )
             }
 
-            PuiGroup("通知") {
-                PuiSwitchRow(
-                    icon = PuiIcon.Bell,
-                    title = "实时更新",
-                    subtitle = "Android 16+ 显示为状态栏实时动态，低版本为常驻通知",
-                    checked = vm.liveNotification,
-                    onChange = { on ->
-                        if (on) requestToggle(PendingToggle.Live) else vm.updateLiveNotification(false)
-                    },
-                    showDivider = true
-                )
-                PuiSwitchRow(
-                    icon = PuiIcon.Bell,
-                    title = "余额通知",
-                    subtitle = "常驻通知，滑不走；展开可看赠送 / 充值并手动刷新",
-                    checked = vm.normalNotification,
-                    onChange = { on ->
-                        if (on) requestToggle(PendingToggle.Normal) else vm.updateNormalNotification(false)
-                    },
-                    showDivider = true
-                )
-                PuiInfoRow(
-                    "通知权限",
-                    if (permGranted) "已允许" else "未允许",
-                    showDivider = !permGranted,
-                    icon = PuiIcon.Bell
-                )
-                if (!permGranted) {
-                    Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
-                        PuiGhostButton("去系统设置开启", Modifier.fillMaxWidth()) {
-                            openNotificationSettings(context)
-                        }
-                    }
-                }
-            }
         }
 
         PuiTopFade(height = blurHeight, topAlpha = 0.5f)
