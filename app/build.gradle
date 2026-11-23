@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
 // 版本名：发版只改这一行，versionName / versionCode / APK 文件名都跟着变
-def vName = '4.16'
+def vName = '4.17'
 
 android {
     namespace = 'com.panl.balance'

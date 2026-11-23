@@ -6,9 +6,9 @@
 浅灰底（`#F0F1F3`）+ 纯白卡片（`#FFFFFF`）+ 20dp 圆角 + 克制字阶，强调色默认换成 DeepSeek 蓝。
 
 - 包名：`com.panl.balance`
-- 版本：`4.16`（versionCode 416）
+- 版本：`4.17`（versionCode 417）
   - 版本规则：`versionName` 每次迭代 +0.01（4.16 → 4.17 …）；`versionCode` 由它推导 = 主版本 × 100 + 次版本（4.16 → 416），因此每次迭代 +1。`app/build.gradle` 里只改 `vName` 一行即可，两者不会对不上
-- 产物：`白饭时刻-4.16.apk`（8.5 MB，已签名可直接安装）
+- 产物：`白饭时刻-4.17.apk`（8.5 MB，已签名可直接安装）
 - 成品包下载：[Releases · 最新版本](https://github.com/sakurakingfifth-debug/White-Rice-Time/releases/latest)
 - 编译基准：Kotlin 2.2.10 / Compose 1.10.4 / Material3 1.4.0 / AGP 9.2.1 / Gradle 9.4.1 / compileSdk 37 / minSdk 26
 
@@ -834,7 +834,7 @@ Phone / Split / SliderVertical / Selected），应用界面不用它们。
   一样会自动退化成普通 `startActivity`；
 - 因此它不再销毁主页面之外的任何东西 —— 主页面本来就在下面，返回也不需要恢复状态。
 
-### 回收站那颗「一键恢复」的取色与按压效果（4.16 后段）
+### 回收站那颗「一键恢复」的取色与按压效果（4.17）
 
 参照「小布指令」详情页的「添加至自动指令」逐条对齐，四条都是实测出来的：
 
@@ -853,7 +853,7 @@ Phone / Split / SliderVertical / Selected），应用界面不用它们。
 
 另外列表滚动时胶囊会收起（`scrollState.isScrollInProgress`），停下再回来。
 
-### 弹窗的进出场动画（4.16 后段）
+### 弹窗的进出场动画（4.17）
 
 弹窗不再是「啪」地出现：打开时从中间 0.86 倍弹出（`spring` 阻尼 0.78，带一点回弹）配 140ms 淡入，
 关闭时缩到 0.92 倍、140ms 淡出。
@@ -862,7 +862,7 @@ Phone / Split / SliderVertical / Selected），应用界面不用它们。
 所以 `AppDialog` 内部用 `MutableTransitionState` 管显隐，按钮/返回键只把 `targetState` 置 false，
 等 `isIdle && !currentState` 时再执行挂起的动作（真正调用 `onConfirm` / `onDismissRequest`）。
 
-### 弹窗内容的上下渐进遮罩（4.16 后段）
+### 弹窗内容的上下渐进遮罩（4.17）
 
 弹窗正文放在一个固定最大高度（460dp）的滚动区里，滚到一半时原来是被**硬边裁断**——
 半行字直接切掉。现在两侧加了渐进遮罩：还能往下滚的一侧淡出，已经滚到头的那一侧保持实边。
@@ -874,7 +874,7 @@ Phone / Split / SliderVertical / Selected），应用界面不用它们。
 一个顺序上的坑：遮罩必须挂在 `verticalScroll()` **外面**。挂在里面量到的是整段内容的高度，
 渐变会被摊平到几乎看不见 —— 第一版就是这么错的，滚动后顶部完全没有淡出。
 
-### 弹窗按钮改成实心色块（4.16 后段）
+### 弹窗按钮改成实心色块（4.17）
 
 Material3 默认的弹窗按钮是两个文字按钮，主次不分，深色底上还很轻。现在统一成
 `AppDialog` + `DialogButtons`：
@@ -891,7 +891,7 @@ Material3 默认的弹窗按钮是两个文字按钮，主次不分，深色底�
 `surfaceContainerLowest` 的卡片上根本看不出边界 —— 取消键的浅底改用
 `onSurface.copy(alpha = 0.08f)`，浅色/深色主题下都能看出层次。
 
-### 弹窗背景模糊（4.16 后段）
+### 弹窗背景模糊（4.17）
 
 应用里的弹窗（清空确认、后台隐藏确认、回收站删除、自定义 ARGB、自检）都是独立的 `Dialog` 窗口，
 内容画在自己的 surface 上，Compose 里「模糊底层」是做不到的。做法是让系统去模糊**弹窗后面那个窗口**：
@@ -909,7 +909,7 @@ window.attributes = window.attributes.apply { blurBehindRadius = 20dp.toPx() }
   所以拖滑杆时已打开的弹窗也会跟着变（`LaunchedEffect(radiusDp)`）；
 - 每个弹窗里塞一个零尺寸的 `DialogWindowBlur()` 即可，正文不用改。
 
-### 顺带：刷新 / 后台 / 通知收成一页（4.16 后段）
+### 顺带：刷新 / 后台 / 通知收成一页（4.17）
 
 设置页原来有「刷新」「后台」「通知」三个分组，十来个控件把第一屏撑得很长，而它们其实是一件事
 （多久同步一次、要不要常驻、要不要通知）。现在合并成一行「自动刷新、后台与通知」，
@@ -926,7 +926,7 @@ ColorOS 的无缝动画（设置页那一行放大成全屏）。难点在于 Vi
 主界面和这两个页面都通过 `sharedBalanceViewModel()` 取同一个实例。
 这样既有无缝动画，又只有一份定时器。
 
-### APK 产物命名（4.16 后段）
+### APK 产物命名（4.17）
 
 构建产物固定叫 `白饭时刻-<versionName>.apk`，发版不用手动改名：`app/build.gradle` 顶部的
 `vName` 一改，`versionName`、`versionCode`、产物名三处同时跟上。
